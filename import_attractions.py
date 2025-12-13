@@ -2,6 +2,8 @@ import json # 把 JSON 型別轉成 Python 型別
 import re # 使用正則表達式來擷取圖片 URL
 import mysql.connector
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
 # 讀取 taipei-attractions.json 檔案
 with open('data/taipei-attractions.json', 'r', encoding='utf-8') as f:
@@ -10,17 +12,16 @@ with open('data/taipei-attractions.json', 'r', encoding='utf-8') as f:
 results = data['result']['results']
 
 # 連線到 MySQL
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except Exception:
-    pass
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_USER = os.getenv("DB_USER", "root")
+DB_NAME = os.getenv("DB_NAME", "taipei_day_trip")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
+
 con = mysql.connector.connect(
-        host="localhost",
-        user="root",
+        host=DB_HOST,
+        user=DB_USER,
         password=DB_PASSWORD,
-        database="taipei_day_trip",
+        database=DB_NAME,
         charset="utf8mb4"
     )
 cursor = con.cursor()

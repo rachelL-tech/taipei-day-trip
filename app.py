@@ -3,22 +3,23 @@ from fastapi.responses import FileResponse, JSONResponse
 from typing import Optional
 import mysql.connector.pooling
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
 app = FastAPI()
 
 PAGE_SIZE = 8 # 固定每頁 8 筆
 
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except Exception:
-    pass
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_USER = os.getenv("DB_USER", "root")
+DB_NAME = os.getenv("DB_NAME", "taipei_day_trip")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
+
 dbconfig = {
-		"host": "localhost",
-		"user": "root",
+		"host": DB_HOST,
+		"user": DB_USER,
 		"password": DB_PASSWORD,
-		"database": "taipei_day_trip",
+		"database": DB_NAME,
 		"charset": "utf8mb4"
 }
 
