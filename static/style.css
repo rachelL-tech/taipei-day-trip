@@ -77,7 +77,7 @@ button { font: inherit; }
 .hero__bg {
   position: absolute;
   inset: 0; /* top/right/bottom/left 全為 0 */
-  background-image: url("./static/images/welcome.png");
+  background-image: url("/static/images/welcome.png");
   background-size: cover; /* 按比例放大並裁切圖片以填滿容器 */
   background-position: center top; /* 以中央對齊裁切 */
 }
@@ -172,7 +172,7 @@ button { font: inherit; }
   padding: 8px 15px;
   width: 30px;
   height: 30px;
-  background-image: url("./static/images/search.png");
+  background-image: url("/static/images/search.png");
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
@@ -236,7 +236,7 @@ button { font: inherit; }
 
 .mrt-scroll__arrow--left {
   margin: 9px 0 9px 15px;
-  background-image: url("./static/images/btn_left.png");
+  background-image: url("/static/images/btn_left.png");
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
@@ -244,7 +244,7 @@ button { font: inherit; }
 
 .mrt-scroll__arrow--right {
   margin: 9px 15px 9px 0;
-  background-image: url("./static/images/btn_right.png");
+  background-image: url("/static/images/btn_right.png");
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
