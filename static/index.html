@@ -1,11 +1,143 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Index</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/index.js" defer></script>
+  <title>台北一日遊</title>
 </head>
-<body>
-  
+<body class="page">
+  <!-- 1) Sticky（固定） Header -->
+  <header class="header header--sticky">
+    <div class="header__container">
+      <a class="header__logo" href="/">台北一日遊</a>
+
+      <nav class="header__nav">
+        <a class="header__nav-link" href="/booking.html">預定行程</a>
+        <a class="header__nav-link" href="/#signin">登入/註冊</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page__main">
+  <!-- 2) Hero (說明 + 搜尋欄) -->
+    <section class="hero">
+      <div class="hero__bg"></div>
+
+      <div class="hero__container">
+        <div class="hero__content">
+          <h1 class="hero__title">輕鬆享受台北一日悠閒</h1>
+          <p class="hero__subtitle">探索每個角落，體驗城市的深度旅遊行程</p>
+
+          <!-- Search Bar -->
+          <form class="search-bar">
+            <div class="search-bar__group">
+
+              <!-- Category Dropdown -->
+              <div class="category-dropdown">
+                <button class="category-dropdown__trigger" type="button">
+                  <span class="category-dropdown__trigger-text">全部分類▼</span>
+                </button>
+                <!-- Popup listbox -->
+                <div class="category-dropdown__panel" hidden>
+                  <ul class="category-dropdown__list" id="category-dropdown-list">
+                    <li class="category-dropdown__item" data-category="">全部分類</li>
+                    <!-- 之後用 /api/categories 動態塞入 -->
+                    <li class="category-dropdown__item" data-category="公共藝術">公共藝術</li>
+                    <li class="category-dropdown__item" data-category="歷史建築">歷史建築</li>
+                    <li class="category-dropdown__item" data-category="戶外踏青">戶外踏青</li>
+                    <li class="category-dropdown__item" data-category="戶外踏青">戶外踏青</li>
+                    <li class="category-dropdown__item" data-category="戶外踏青">戶外踏青</li>
+                    <li class="category-dropdown__item" data-category="戶外踏青">戶外踏青</li>
+                    <li class="category-dropdown__item" data-category="戶外踏青">戶外踏青</li>
+                    <li class="category-dropdown__item" data-category="戶外踏青">戶外踏青</li>
+                  </ul>
+                </div>
+              </div>
+
+              <!-- 關鍵字搜尋 -->
+              <label class="search-bar__field">
+                <input
+                  class="search-bar__input"
+                  type="text"
+                  name="keyword"
+                  placeholder="輸入景點名稱查詢"
+                  autocomplete="off"
+                />
+              </label>
+
+              <!-- Submit -->
+              <button class="search-bar__submit" type="submit">
+                <div class="search-bar__submit-icon"></div>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+        <!-- 3) Main Content (MRT + Cards) -->
+    <section class="main-content">
+      <div class="main-content__container">
+
+        <!-- MRT horizontal scroll -->
+        <div class="mrt-scroll">
+          <div class="mrt-scroll__arrow mrt-scroll__arrow--left"></div> <!-- 往左 -->
+
+          <div class="mrt-scroll__viewport">
+            <ul class="mrt-scroll__list">
+              <!-- 之後用 /api/mrts 動態塞入 -->
+              <li class="mrt-scroll__item"><button class="mrt-scroll__btn" type="button">臺大醫院</button></li>
+              <li class="mrt-scroll__item"><button class="mrt-scroll__btn" type="button">龍山寺</button></li>
+              <li class="mrt-scroll__item"><button class="mrt-scroll__btn" type="button">西門</button></li>
+              <li class="mrt-scroll__item"><button class="mrt-scroll__btn" type="button">動物園</button></li>
+              <li class="mrt-scroll__item"><button class="mrt-scroll__btn" type="button">中山</button></li>
+              <li class="mrt-scroll__item"><button class="mrt-scroll__btn" type="button">台北101／世貿</button></li>
+              <li class="mrt-scroll__item"><button class="mrt-scroll__btn" type="button">士林</button></li>
+            </ul>
+          </div>
+
+          <div class="mrt-scroll__arrow mrt-scroll__arrow--right"></div> <!-- 往右 -->
+        </div>
+
+        <!-- Attraction cards grid(景點卡片) -->
+        <div class="attraction-grid"></div>
+          <!-- 用 /api/attractions 動態注入 -->
+          <!-- <article class="attraction-card" data-attraction-id="1">
+            <a class="attraction-card__link" href="/attraction.html?id=1">
+              <div class="attraction-card__media">
+                <img
+                  class="attraction-card__image"
+                  src="https://www.travel.taipei/d_upload_ttn/sceneadmin/pic/11000848.jpg"
+                  alt="平安鐘"
+                  loading="lazy"
+                />
+                <div class="attraction-card__title-bar">
+                  <h3 class="attraction-card__title">平安鐘</h3>
+                </div>
+              </div>
+
+              <div class="attraction-card__meta">
+                <span class="attraction-card__mrt">忠孝復興</span>
+                <span class="attraction-card__category">公共藝術</span>
+              </div>
+            </a>
+          </article> -->
+
+        <!-- Infinite scroll sentinel -->
+        <div class="main-content__sentinel"></div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- 4) Footer -->
+  <footer class="footer" role="contentinfo">
+    <div class="footer__container">
+      <small class="footer__text">COPYRIGHT © 2021 台北一日遊</small>
+    </div>
+  </footer>
+
 </body>
 </html>
