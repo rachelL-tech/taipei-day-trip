@@ -331,6 +331,7 @@ button { font: inherit; }
   padding: 10px;
   white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .attraction-card__meta {

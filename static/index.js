@@ -1,6 +1,6 @@
 // IIFE(() => { ... })()，宣告一個匿名箭頭函式，然後立刻呼叫。當這支 JS 檔被載入並執行時，立刻跑裡面的初始化程式碼
 (() => {
-  // Fetch Attraction API
+  // Fetch Attraction API (without filtering)
   const gridEl = document.querySelector(".attraction-grid");
   if (!gridEl) return;
 
@@ -10,25 +10,28 @@
     searchForm.addEventListener("submit", (e) => e.preventDefault());
   }
 
-  // 之後 Part 2-3 / 2-5 會用到：集中管理狀態
+  // for Part 2-3 / 2-5：集中管理頁面狀態
   const state = {
     nextPage: 0,
-    isLoading: false,
+    isLoading: false, // 防止短時間重複 fetch（Part 2-3）
     category: "",
-    keyword: "",
+    keyword: "", // 搜尋條件（Part 2-5）
   };
 
+  // 把參數組成 API URL（含 query string）
   function buildAttractionsUrl({ page, category, keyword }) {
     const params = new URLSearchParams();
-    params.set("page", String(page));
+    // page 一定有值
 
-    // 有值才塞，避免送出空字串參數
+    params.set("page", String(page));
+    // category、keyword 有值才塞參數
     if (category) params.set("category", category);
     if (keyword) params.set("keyword", keyword);
 
     return `/api/attractions?${params.toString()}`;
   }
 
+  // 打 /api/attractions
   async function fetchAttractions({ page, category, keyword }) {
     const url = buildAttractionsUrl({ page, category, keyword });
     const res = await fetch(url);
@@ -41,12 +44,13 @@
     return json; // { nextPage, data }
   }
 
+  // 把「一筆 attraction 資料」轉成「一張卡片 DOM」
   function createAttractionCard(item) {
     const id = item.id;
-    const name = item.name ?? "";
-    const category = item.category ?? "";
-    const mrt = item.mrt ?? "";
-    const imgSrc = Array.isArray(item.images) && item.images.length > 0 ? item.images[0] : "";
+    const name = item.name;
+    const category = item.category;
+    const mrt = item.mrt;
+    const imgSrc = item.images.length > 0 ? item.images[0] : "";
 
     // <article class="attraction-card" data-attraction-id="...">
     const article = document.createElement("article");
@@ -101,10 +105,11 @@
     return article;
   }
 
+  // 把「多筆 attraction 資料陣列」渲染到 gridEl 裡
   function renderAttractions(list, { replace = false } = {}) {
     if (replace) gridEl.textContent = "";
 
-    const frag = document.createDocumentFragment();
+    const frag = document.createDocumentFragment(); // 在記憶體裡先建立一個「看不見的暫存容器」再一次插入，避免一直操作 DOM ，效能跟流暢度會比較好
     list.forEach((item) => {
       frag.appendChild(createAttractionCard(item));
     });
@@ -112,22 +117,21 @@
     gridEl.appendChild(frag);
   }
 
+  // 載入並顯示第一頁的景點，且把 nextPage 存起來
   async function loadFirstPage() {
-    if (state.isLoading) return;
+    if (state.isLoading) return; // 防止重複觸發
+
     state.isLoading = true;
 
     try {
-      // 把你目前 index.html 裡的 placeholder cards 清掉（你原本就註解說會改成動態塞）:contentReference[oaicite:5]{index=5}
-      gridEl.textContent = "";
-
       const json = await fetchAttractions({
         page: 0,
         category: state.category,
         keyword: state.keyword,
       });
 
-      renderAttractions(json.data, { replace: false });
-      state.nextPage = json.nextPage; // Part 2-3 會用到（可能是 null）:contentReference[oaicite:6]{index=6}
+      renderAttractions(json.data, { replace: true });
+      state.nextPage = json.nextPage; // for Part 2-3 
     } catch (err) {
       console.error(err);
       gridEl.textContent = "載入失敗，請稍後再試。";
@@ -141,9 +145,12 @@
 })();
 
 // Fetch Attraction API for More Data Automatically
+// state.pendingLoadMore：載入中又被觸發了嗎？（先記起來）
 
 // Category Selection
 
 // Filtering by Category and Keyword
+// 用 requestId 或 AbortController，讓最後一次操作有效
 
 // MRT Name List and Filtered by MRT Name
+// 用 requestId 或 AbortController，讓最後一次操作有效
