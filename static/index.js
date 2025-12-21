@@ -1,3 +1,7 @@
+// 一個核心函式：loadAttractions({ page, replace })→裡面第一行就做 if (state.isLoading) return; state.isLoading=true; ... finally state.isLoading=false;
+// loadFirstPage() 只是呼叫 loadAttractions({ page:0, replace:true })
+// loadNextPage() 只是呼叫 loadAttractions({ page: state.nextPage, replace:false })
+
 // IIFE(() => { ... })()，宣告一個匿名箭頭函式，然後立刻呼叫。當這支 JS 檔被載入並執行時，立刻跑裡面的初始化程式碼
 (() => {
   // Part 2-2: Fetch Attraction API (without filtering)
@@ -221,6 +225,82 @@
   }
 
 // Part 2-4: Category Selection
+  const categoryDropdownEl = document.querySelector(".category-dropdown");
+  const categoryTriggerBtn = document.querySelector(".category-dropdown__trigger");
+  const categoryTriggerTextEl = document.querySelector(".category-dropdown__trigger-text");
+  const categoryPanelEl = document.querySelector(".category-dropdown__panel");
+  const categoryListEl = document.querySelector(".category-dropdown__list");
+
+  function setPanelOpen(isOpen) {
+    if (!categoryPanelEl || !categoryTriggerBtn) return;
+    categoryPanelEl.hidden = !isOpen;
+  }
+
+  function togglePanel() {
+    setPanelOpen(categoryPanelEl.hidden); // hidden=true 時 open;hidden=false 時 close
+  }
+
+  function updateTriggerText(category) {
+    // category: "" 表示全部分類
+    const label = category ? category : "全部分類";
+    if (categoryTriggerTextEl) categoryTriggerTextEl.textContent = `${label}▼`;
+  }
+
+  function setCurrentCategory(category) {
+    state.category = category;
+    updateTriggerText(state.category);
+  }
+
+  async function fetchCategories() {
+    const res = await fetch("/api/categories");
+    if (!res.ok) {
+      throw new Error(`Fetch /api/categories failed: ${res.status} ${res.statusText}`);
+    }
+    const json = await res.json(); // { data: [...] }
+    return json.data;
+  }
+
+  function renderCategories(categories) {
+    if (!categoryListEl) return;
+
+    const frag = document.createDocumentFragment();
+    categories.forEach((cat) => {
+      const li = document.createElement("li");
+      li.className = "category-dropdown__item";
+      li.dataset.category = cat;
+      li.textContent = cat;
+      frag.appendChild(li);
+    });
+
+    categoryListEl.appendChild(frag);
+  }
+
+    async function initCategoryDropdown() {
+    if (!categoryDropdownEl || !categoryTriggerBtn || !categoryPanelEl || !categoryListEl) return;
+
+    // 1) 載入 categories
+    try {
+      const categories = await fetchCategories();
+      renderCategories(categories);
+    } catch (err) {
+      console.error(err);
+    }
+
+    // 2) trigger：點一下開，再點一下關
+    categoryTriggerBtn.addEventListener("click", (e) => {
+      togglePanel();
+    });
+
+    // 3) 點清單項目：更新 state.category + 更新文字 + 關閉 panel
+    categoryListEl.addEventListener("click", (e) => {
+      const item = e.target.closest(".category-dropdown__item");
+      if (!item) return;
+
+      const category = item.dataset.category;
+      setCurrentCategory(category);
+      categoryPanelEl.hidden = true;
+    });
+  }
 
 // Part 2-5: Filtering by Category and Keyword
 // 用 requestId 或 AbortController，讓最後一次操作有效
@@ -228,9 +308,8 @@
 // Part 2-6: MRT Name List and Filtered by MRT Name
 // 用 requestId 或 AbortController，讓最後一次操作有效
 
-  document.addEventListener("DOMContentLoaded", loadFirstPage);
+  document.addEventListener("DOMContentLoaded", () => {
+    initCategoryDropdown();
+    loadFirstPage();
+  });
 })();
-
-// 一個核心函式：loadAttractions({ page, replace })→裡面第一行就做 if (state.isLoading) return; state.isLoading=true; ... finally state.isLoading=false;
-// loadFirstPage() 只是呼叫 loadAttractions({ page:0, replace:true })
-// loadNextPage() 只是呼叫 loadAttractions({ page: state.nextPage, replace:false })

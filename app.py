@@ -12,7 +12,7 @@ app = FastAPI()
 PAGE_SIZE = 8 # 固定每頁 8 筆
 
 DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_USER = os.getenv("DB_USER", "user")
+DB_USER = os.getenv("DB_USER", "root")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_NAME = os.getenv("DB_NAME", "taipei_day_trip")
 
