@@ -1,20 +1,11 @@
-// 一個核心函式：loadAttractions({ page, replace })→裡面第一行就做 if (state.isLoading) return; state.isLoading=true; ... finally state.isLoading=false;
-// loadFirstPage() 只是呼叫 loadAttractions({ page:0, replace:true })
-// loadNextPage() 只是呼叫 loadAttractions({ page: state.nextPage, replace:false })
-
 // IIFE(() => { ... })()，宣告一個匿名箭頭函式，然後立刻呼叫。當這支 JS 檔被載入並執行時，立刻跑裡面的初始化程式碼
+
 (() => {
   // Part 2-2: Fetch Attraction API (without filtering)
   const gridEl = document.querySelector(".attraction-grid");
   if (!gridEl) return;
 
-  // 避免按 Enter 送出 form 造成頁面刷新（你後面 Part 2-5 會接管 submit）
-  const searchForm = document.querySelector(".search-bar");
-  if (searchForm) {
-    searchForm.addEventListener("submit", (e) => e.preventDefault());
-  }
-
-  // for Part 2-3 / 2-5：集中管理頁面狀態
+  // for Part 2-3 、 2-5 集中管理頁面狀態
   const state = {
     nextPage: 0,
     isLoading: false, // 防止短時間重複 fetch（Part 2-3）
@@ -275,7 +266,7 @@
     categoryListEl.appendChild(frag);
   }
 
-    async function initCategoryDropdown() {
+  async function initCategoryDropdown() {
     if (!categoryDropdownEl || !categoryTriggerBtn || !categoryPanelEl || !categoryListEl) return;
 
     // 1) 載入 categories
@@ -303,13 +294,107 @@
   }
 
 // Part 2-5: Filtering by Category and Keyword
-// 用 requestId 或 AbortController，讓最後一次操作有效
+  // 用 requestId 或 AbortController，讓最後一次操作有效
+  // 用 form submit 接管搜尋：按 Enter / 按放大鏡都會觸發
+  const searchForm = document.querySelector(".search-bar");
+  const keywordInput = document.querySelector(".search-bar__input");
+
+  if (searchForm) {
+    searchForm.addEventListener("submit", (e) => {
+      e.preventDefault(); // 不刷新頁面
+
+      // 讀取 keyword（trim），空字串就視為「沒有 keyword」
+      const kw = keywordInput.value.trim(); // 更好寫法是 const kw = (keywordInput?.value ?? "").trim();
+      state.keyword = kw; 
+      
+      // 重新載入第一頁（replace）
+      loadFirstPage();
+    });
+  }
+
 
 // Part 2-6: MRT Name List and Filtered by MRT Name
 // 用 requestId 或 AbortController，讓最後一次操作有效
+  const mrtViewportEl = document.querySelector(".mrt-scroll__viewport");  
+  const mrtListEl = document.querySelector(".mrt-scroll__list");
+  const mrtArrowLeftEl = document.querySelector(".mrt-scroll__arrow--left");
+  const mrtArrowRightEl = document.querySelector(".mrt-scroll__arrow--right");
+
+  function renderMrtList(names) {
+    const frag = document.createDocumentFragment();
+
+    names.forEach((name) => {
+      const li = document.createElement("li");
+      li.className = "mrt-scroll__item";
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "mrt-scroll__btn";
+      btn.textContent = name;
+
+      li.appendChild(btn);
+      frag.appendChild(li);
+    });
+    mrtListEl.appendChild(frag);
+    console.log(mrtListEl);
+  }
+
+  function bindMrtClick() {
+    // 事件委派
+    mrtListEl.addEventListener("click", (e) => {
+      const btn = e.target.closest(".mrt-scroll__btn");
+      if (!btn) return;
+
+      const mrtName = btn.textContent;
+      if (!mrtName) return;
+
+      // 1) 放入輸入框
+      if (keywordInput) keywordInput.value = mrtName;
+
+      // 2) state 同步
+      state.keyword = mrtName;
+
+      // 3) 立即搜尋（replace 清單 + 重設 nextPage）
+      loadFirstPage();
+    });
+  }
+
+  // 讓 MRT 橫向列表水平捲動
+  function scrollMrtBy(direction) {
+    if (!mrtViewportEl) return;
+    const amount = Math.round(mrtViewportEl.clientWidth * 0.8); // mrtViewportEl.clientWidth：viewport 可見區域的寬度；* 0.8：每次捲動 80% 的可見寬度；Math.round(...)：把結果變成整數
+    mrtViewportEl.scrollBy({ left: direction * amount, behavior: "smooth" }); // 如果 direction = 1 → left = +amount → 往右捲；如果 direction = -1 → left = -amount → 往左捲
+  }
+
+  function bindMrtArrows() {
+    if (mrtArrowLeftEl) {
+      mrtArrowLeftEl.addEventListener("click", () => scrollMrtBy(-1));
+    }
+    if (mrtArrowRightEl) {
+      mrtArrowRightEl.addEventListener("click", () => scrollMrtBy(1));
+    }
+  }
+
+  async function initMrtList() {
+    if (!mrtListEl) return;
+
+    try {
+      const resp = await fetch("/api/mrts");
+      if (!resp.ok) throw new Error(`Fetch /api/mrts failed: ${resp.status}`);
+      const json = await resp.json();
+
+      const names = json.data;
+      renderMrtList(names);
+      bindMrtClick();
+      bindMrtArrows();
+    } catch (err) {
+      console.error(err);
+    }
+  }
 
   document.addEventListener("DOMContentLoaded", () => {
     initCategoryDropdown();
+    initMrtList();
     loadFirstPage();
   });
 })();

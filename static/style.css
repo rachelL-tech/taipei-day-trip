@@ -232,6 +232,12 @@ button { font: inherit; }
   align-items: center;
   justify-content: center;
   padding: 0;
+  opacity: 0.45;
+  transition: opacity 160ms ease;
+}
+
+.mrt-scroll__arrow:hover {
+  opacity: 1;
 }
 
 .mrt-scroll__arrow--left {
@@ -255,7 +261,7 @@ button { font: inherit; }
   overflow-x: auto; /* 若內容超出容器寬度，會出現水平滾動條並允許水平捲動；否則不顯示 */
   overflow-y: hidden; /* 垂直方向不允許捲動 */
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   scrollbar-width: none;
 }
 
@@ -263,8 +269,13 @@ button { font: inherit; }
 
 .mrt-scroll__list {
   display: flex;
+  width: max-content; /* 讓 list 寬度撐開到包住所有 item */
   align-items: center;
   min-width: max-content;
+}
+
+.mrt-scroll__item {
+  flex: 0 0 auto;         /* 每個 item 不要被壓縮 */
 }
 
 .mrt-scroll__btn {
