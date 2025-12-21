@@ -391,10 +391,9 @@
       console.error(err);
     }
   }
-
-  document.addEventListener("DOMContentLoaded", () => {
-    initCategoryDropdown();
-    initMrtList();
-    loadFirstPage();
-  });
+  
+  // 初始化
+  initCategoryDropdown();
+  initMrtList();
+  loadFirstPage();
 })();
