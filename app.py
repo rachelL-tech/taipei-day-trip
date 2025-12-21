@@ -1,5 +1,6 @@
 from fastapi import *
 from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from typing import Optional
 import mysql.connector.pooling
 import os
@@ -11,7 +12,7 @@ app = FastAPI()
 PAGE_SIZE = 8 # 固定每頁 8 筆
 
 DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_USER = os.getenv("DB_USER", "user")
+DB_USER = os.getenv("DB_USER", "root")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_NAME = os.getenv("DB_NAME", "taipei_day_trip")
 
@@ -80,13 +81,13 @@ async def get_attractions(
 			ORDER BY id
 			LIMIT %s OFFSET %s
 		"""
-		data_params = params + [PAGE_SIZE, offset] # 把前面組好的參數加上分頁參數
+		data_params = params + [PAGE_SIZE, offset]
 		cursor.execute(data_sql, data_params)
 		attractions = cursor.fetchall()
 
 		# 取出景點對應的圖片
 		attraction_ids = [attraction["id"] for attraction in attractions] # 取出所有景點 id，並組成 list
-		# 對於 attraction_ids 裡的每個 id，建立一個 key = id、value = [] 的 pair，避免後面.append(...)不會遇到「KeyError」
+		# 對於 attraction_ids 裡的每個 id，建立一個 key = id、value = [] 的 pair，避免後面.append(...)遇到「KeyError」
 		images = {}
 		for id in attraction_ids:
 			images[id] = [] 
@@ -267,7 +268,7 @@ async def get_mrts():
 			con.close()
 
 # Static Pages (Never Modify Code in this Block)
-@app.get("/", include_in_schema=False)
+@app.get("/", include_in_schema=False) # include_in_schema=False ＝ 把這個 / 路由「從 API 文件中隱藏
 async def index(request: Request):
 	return FileResponse("./static/index.html", media_type="text/html")
 @app.get("/attraction/{id}", include_in_schema=False)
@@ -279,3 +280,5 @@ async def booking(request: Request):
 @app.get("/thankyou", include_in_schema=False)
 async def thankyou(request: Request):
 	return FileResponse("./static/thankyou.html", media_type="text/html")
+
+app.mount("/static", StaticFiles(directory="static"))
