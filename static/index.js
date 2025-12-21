@@ -1,6 +1,6 @@
 // IIFE(() => { ... })()，宣告一個匿名箭頭函式，然後立刻呼叫。當這支 JS 檔被載入並執行時，立刻跑裡面的初始化程式碼
 (() => {
-  // Fetch Attraction API (without filtering)
+  // Part 2-2: Fetch Attraction API (without filtering)
   const gridEl = document.querySelector(".attraction-grid");
   if (!gridEl) return;
 
@@ -14,15 +14,16 @@
   const state = {
     nextPage: 0,
     isLoading: false, // 防止短時間重複 fetch（Part 2-3）
+    pendingLoadMore: false, // 後續請求是否在等待中（Part 2-3）
     category: "",
     keyword: "", // 搜尋條件（Part 2-5）
   };
 
   // 把參數組成 API URL（含 query string）
-  function buildAttractionsUrl({ page, category, keyword }) {
-    const params = new URLSearchParams();
+  function createAttractionsUrl({ page, category, keyword }) {
+    const params = new URLSearchParams(); // 在記憶體裡建立一個新的 URLSearchParams 物件，用來組 query string
+    
     // page 一定有值
-
     params.set("page", String(page));
     // category、keyword 有值才塞參數
     if (category) params.set("category", category);
@@ -33,11 +34,11 @@
 
   // 打 /api/attractions
   async function fetchAttractions({ page, category, keyword }) {
-    const url = buildAttractionsUrl({ page, category, keyword });
+    const url = createAttractionsUrl({ page, category, keyword });
     const res = await fetch(url);
 
     if (!res.ok) {
-      throw new Error(`Fetch /api/attractions failed: ${res.status} ${res.statusText}`);
+      throw new Error(`Fetch /api/attractions failed: ${res.status} ${res.statusText}`); // 把這整串字串丟給 new Error() 當作 message，不會 return json()，會被外層最近的 catch(err) 接到
     }
 
     const json = await res.json();
@@ -138,19 +139,98 @@
       state.nextPage = null;
     } finally {
       state.isLoading = false;
+
+      setupObserver(); // for Part 2-3
+
+    //   if (state.nextPage !== null && isElementInViewport(sentinelEl)) {
+    //     requestLoadMore();
+    //   }
     }
   }
+
+// Part 2-3: Fetch Attraction API for More Data Automatically
+  const sentinelEl = document.querySelector(".main-content__sentinel");
+  if (!sentinelEl) return;
+
+  let observer = null;
+
+//   function isElementInViewport(el) {
+//     const rect = el.getBoundingClientRect();
+//     return rect.top < window.innerHeight && rect.bottom > 0;
+//   }
+
+  function setupObserver() {
+    if (observer) observer.disconnect();
+
+    observer = new IntersectionObserver(
+        (entries) => {
+        const entry = entries[0];
+        if (!entry) return;
+        if (entry.isIntersecting) requestLoadMore();
+        },
+        { root: null, threshold: 0 }
+    );
+
+    observer.observe(sentinelEl);
+  }
+
+  function requestLoadMore() {
+    if (state.nextPage === null) {
+        if (observer) observer.disconnect();
+        return;
+    }
+
+    // if (state.isLoading) {
+    //     state.pendingLoadMore = true;
+    //     return;
+    // }
+
+    loadNextPage();
+  }
+
+  async function loadNextPage() {
+    if (state.isLoading) return;
+    if (state.nextPage === null) return;
+
+    const pageToLoad = state.nextPage;
+    state.isLoading = true;
+
+    try {
+        const json = await fetchAttractions({ page: pageToLoad, category: state.category, keyword: state.keyword });
+        renderAttractions(json.data, { replace: false });
+        state.nextPage = json.nextPage;
+
+        if (state.nextPage === null && observer) observer.disconnect();
+    } catch (err) {
+        console.error(err);
+        state.nextPage = null;
+        if (observer) observer.disconnect();
+    } finally {
+        state.isLoading = false;
+
+        // if (state.pendingLoadMore) {
+        // state.pendingLoadMore = false;
+        // requestLoadMore();
+        // return;
+        // }
+
+        // if (state.nextPage !== null && isElementInViewport(sentinelEl)) {
+        // requestLoadMore();
+        // }
+    }
+  }
+
+// Part 2-4: Category Selection
+
+// Part 2-5: Filtering by Category and Keyword
+// 用 requestId 或 AbortController，讓最後一次操作有效
+
+// Part 2-6: MRT Name List and Filtered by MRT Name
+// 用 requestId 或 AbortController，讓最後一次操作有效
 
   document.addEventListener("DOMContentLoaded", loadFirstPage);
 })();
 
-// Fetch Attraction API for More Data Automatically
-// state.pendingLoadMore：載入中又被觸發了嗎？（先記起來）
-
-// Category Selection
-
-// Filtering by Category and Keyword
-// 用 requestId 或 AbortController，讓最後一次操作有效
-
-// MRT Name List and Filtered by MRT Name
-// 用 requestId 或 AbortController，讓最後一次操作有效
+// 一個核心函式：loadAttractions({ page, replace })→裡面第一行就做 if (state.isLoading) return; state.isLoading=true; ... finally state.isLoading=false;
+// loadFirstPage() 只是呼叫 loadAttractions({ page:0, replace:true })
+// loadNextPage() 只是呼叫 loadAttractions({ page: state.nextPage, replace:false })
