@@ -336,7 +336,6 @@
       frag.appendChild(li);
     });
     mrtListEl.appendChild(frag);
-    console.log(mrtListEl);
   }
 
   function bindMrtClick() {
