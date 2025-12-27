@@ -30,20 +30,18 @@
           <div class="attraction-hero__gallery">
             <!-- 輪播容器 -->
             <div class="carousel">
-              <img class="carousel__image" src="https://img.freepik.com/free-photo/fuji-mountain-kawaguchiko-lake-morning-autumn-seasons-fuji-mountain-yamanachi-japan_335224-102.jpg?semt=ais_hybrid&w=740&q=80" alt="" />
+              <img class="carousel__image" id="carousel-image" src="https://img.freepik.com/free-photo/fuji-mountain-kawaguchiko-lake-morning-autumn-seasons-fuji-mountain-yamanachi-japan_335224-102.jpg?semt=ais_hybrid&w=740&q=80" alt="" />
               <button class="carousel__btn carousel__btn--left" type="button"></button>
               <button class="carousel__btn carousel__btn--right" type="button"></button>
               <div class="carousel__indicator">
-                <!-- JS 之後依圖片數量動態塞入 N 個 span -->
-                <span class="carousel__segment is-active"></span>
-                <span class="carousel__segment "></span>
+                <!-- 之後依圖片數量 JS 動態塞入 N 個 span -->
               </div>
             </div>
           </div>
 
           <div class="attraction-hero__info">
-            <h3 class="attraction-hero__title">平安鐘</h3>
-            <p class="attraction-hero__subtitle">公共藝術 at 忠孝復興</p>
+            <h3 class="attraction-hero__title" id="attraction-name"></h3>
+            <p class="attraction-hero__subtitle" id="attraction-category-mrt"></p>
 
             <div class="booking-card">
               <div class="booking-card__title">訂購導覽行程</div>
@@ -91,13 +89,13 @@
 
         <!-- detail (下半部)  -->
         <section class="attraction-detail">
-          <p class="attraction-detail__description">平安鐘祈求大家的平安，這是為了紀念921地震週年的設計，在喧鬧的廣場上每個小時鳴鐘，保佑平安，祈禱臺灣不會再發生這樣的天災。雙手合十加上108個黃色的琉璃乳丁，隨著緩緩流下的水，在底下的一個小噴泉噴出。雙手合十的意義，一個是祈福，一個是包容，教我們要包容這樣的改變，撫平這樣的傷口。下面的水緩緩流出，代表著人的生命力是不斷地延續下去。緩緩地鐘聲，卻帶來心中的寧靜。 這個平安鐘是由建築師姚仁喜與琉璃創作家王俠軍共同設計，長6公尺、寬5公尺，以鑄銅製成，由法鼓山文教基金會全額出資。平安鐘點綴都市景觀，不時提醒大家，面對刻骨銘心的災難痛苦，更應該有謙卑的一顆心。</p>
+          <p class="attraction-detail__description" id="attraction-description"></p>
 
           <p class="attraction-detail__heading">景點地址：</p>
-          <p class="attraction-detail__text">台北市 大安區忠孝東路4段</p>
+          <p class="attraction-detail__text" id="attraction-address"></p>
 
           <p class="attraction-detail__heading">交通方式：</p>
-          <p class="attraction-detail__text">捷運站名：忠孝復興站…</p>
+          <p class="attraction-detail__text" id="attraction-transport"></p>
         </section>
       </div>
     </section>

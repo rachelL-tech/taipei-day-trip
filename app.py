@@ -172,7 +172,7 @@ async def get_attraction(attractionId: int):
 		"""
 		cursor.execute(image_sql, (attractionId,))
 		image_rows = cursor.fetchall()
-		images = [row["url"] for row in image_rows] # list comprehension，取出所有圖片 URL，組成 list
+		images = [row["url"] for row in image_rows] # list comprehension：取出所有圖片 URL，組成 list
 
 		result_data = {
 			"id": attraction["id"],
