@@ -1,7 +1,7 @@
 (() => {
-  // Fetch Attraction API
+  // Part 3-2: Fetch Attraction API
   const nameEl = document.querySelector("#attraction-name")
-  if (!nameEl) return;
+  if (!nameEl) return; // 確定在景點頁
 
   const subtitleEl = document.querySelector("#attraction-category-mrt")
   const descEl = document.querySelector("#attraction-description")
@@ -47,20 +47,8 @@
       imgEl.removeAttribute("src");
       imgEl.alt = "";
     }
-    // indicator 先做到「數量正確」：Part 3-5 再做左右切換
-    renderIndicator(images.length, 0);
-  }
-
-  // Image Slideshow
-  function renderIndicator(count, activeIndex = 0) {
-    const indicator = document.querySelector(".carousel__indicator");
-    indicator.innerHTML = "";
-
-    for (let i = 0; i < count; i++) {
-      const seg = document.createElement("span");
-      seg.className = "carousel__segment" + (i === activeIndex ? " is-active" : "");
-      indicator.appendChild(seg);
-    }
+    // create segment in indicator（先做到數量正確，Part 3-5 再做左右切換）
+    createSegment(images.length, 0);
   }
 
   async function init() {
@@ -73,8 +61,53 @@
     }
   }
 
-  init();
+  // Part 3-3: Time Selection
+  const priceEl = document.querySelector(".booking-card__price");
+  const timeEl = document.querySelector(".booking-card__time");
 
+  const TIME_PRICE = {
+    morning: 2000,
+    afternoon: 2500,
+  };
+
+  function setPriceByTime(time){
+    if(!priceEl) return;
+    const price = TIME_PRICE[time];
+    priceEl.textContent = `新台幣 ${price} 元`;
+  }
+
+  function getCheckedTime() {
+    const checked = document.querySelector('input[name="time"]:checked'); // 選到 <input> ＋ name="time"＋目前已勾選的 DOM 元素
+    if(!checked) return "morning";
+    return checked.value;
+  }
+
+  function bindTimeSelection() {
+    // 綁事件前，先把畫面價格跟「目前被勾選的 radio」同步（避免未來你改預設值會不同步）
+    setPriceByTime(getCheckedTime());
+
+    if (!timeEl) return;
+    timeEl.addEventListener("change", (e) => {
+      const input = e.target.closest('input[name="time"]');
+      if (!input) return;
+      setPriceByTime(input.value);
+    });
+  }
+
+  // Part 3-5: Image Slideshow
+  function createSegment(count, activeIndex = 0) {
+    const indicator = document.querySelector(".carousel__indicator");
+    indicator.innerHTML = "";
+
+    for (let i = 0; i < count; i++) {
+      const seg = document.createElement("span");
+      seg.className = "carousel__segment" + (i === activeIndex ? " is-active" : "");
+      indicator.appendChild(seg);
+    }
+  }
+
+  bindTimeSelection();
+  init();
 })();
 
 // function setActiveIndicator(activeIndex) {
