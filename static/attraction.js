@@ -44,12 +44,12 @@
     images = data.images;
     if (!imgEl || !indicatorEl) return;
     // 沒圖片時，不要殘留舊圖
-    if (slideImages.length === 0) { 
+    if (images.length === 0) { 
       imgEl.removeAttribute("src");
       imgEl.alt = "";
       return;
     }
-    createSegment(slideImages.length, 0);
+    createSegment(images.length, 0);
     showSlide(0);
   }
 
