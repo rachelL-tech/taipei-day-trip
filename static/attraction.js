@@ -8,6 +8,7 @@
   const addrEl = document.querySelector("#attraction-address");
   const transportEl = document.querySelector("#attraction-transport");
   const imgEl = document.querySelector("#carousel-image");
+  const indicatorEl = document.querySelector(".carousel__indicator");
   let images = [];
 
   // 從網址抓 id ：不建議經過 index 的 click 事件把 id 存在 cookie/localStorage/變數，因為直接貼連結、在景點頁按重新整理、或從 Google 搜尋進來等情況，都不會經過 index 的 click 事件，而且cookie / localStorage 是「全站共享」，同時開很多不同 id 的 tab 會互相污染
@@ -107,8 +108,6 @@
 
   // 建立 segment
   function createSegment(count, activeIndex) {
-    const indicatorEl = document.querySelector(".carousel__indicator");
-    if (!indicatorEl) return;
     indicatorEl.innerHTML = "";
 
     for (let i = 0; i < count; i++) {
