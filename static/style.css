@@ -657,7 +657,8 @@ button { font: inherit; }
 
 /* 下方內文 */
 .attraction-detail {
-  height: 362px;
+  min-height: 362px;
+  height: auto;
   margin: 0 0 40px;
   padding: 0 10px;
 }
@@ -752,7 +753,6 @@ button { font: inherit; }
   }
 
   .attraction-detail {
-    height: auto;
     padding: 0;
     margin: 0 0 40px;
   }
