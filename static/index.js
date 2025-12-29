@@ -336,7 +336,6 @@
       frag.appendChild(li);
     });
     mrtListEl.appendChild(frag);
-    console.log(mrtListEl);
   }
 
   function bindMrtClick() {
@@ -391,10 +390,9 @@
       console.error(err);
     }
   }
-
-  document.addEventListener("DOMContentLoaded", () => {
-    initCategoryDropdown();
-    initMrtList();
-    loadFirstPage();
-  });
+  
+  // 初始化
+  initCategoryDropdown();
+  initMrtList();
+  loadFirstPage();
 })();

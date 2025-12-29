@@ -172,7 +172,7 @@ async def get_attraction(attractionId: int):
 		"""
 		cursor.execute(image_sql, (attractionId,))
 		image_rows = cursor.fetchall()
-		images = [row["url"] for row in image_rows] # list comprehension，取出所有圖片 URL，組成 list
+		images = [row["url"] for row in image_rows] # list comprehension：取出所有圖片 URL，組成 list
 
 		result_data = {
 			"id": attraction["id"],
@@ -268,7 +268,7 @@ async def get_mrts():
 			con.close()
 
 # Static Pages (Never Modify Code in this Block)
-@app.get("/", include_in_schema=False) # include_in_schema=False ＝ 把這個 / 路由「從 API 文件中隱藏
+@app.get("/", include_in_schema=False) # include_in_schema=False ＝ 把這個 / 路由從 API 文件中隱藏
 async def index(request: Request):
 	return FileResponse("./static/index.html", media_type="text/html")
 @app.get("/attraction/{id}", include_in_schema=False)

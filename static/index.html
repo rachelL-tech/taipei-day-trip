@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="./static/style.css">
-  <script src="./static/index.js" defer></script>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/index.js" defer></script>
   <title>台北一日遊</title>
 </head>
 <body class="page">
@@ -14,14 +14,14 @@
       <a class="header__logo" href="/">台北一日遊</a>
 
       <nav class="header__nav">
-        <a class="header__nav-link" href="/booking.html">預定行程</a>
+        <a class="header__nav-link" href="/booking">預定行程</a>
         <a class="header__nav-link" href="/#signin">登入/註冊</a>
       </nav>
     </div>
   </header>
 
   <main class="page__main">
-  <!-- 2) Hero (說明 + 搜尋欄) -->
+    <!-- 2) Hero (說明 + 搜尋欄) -->
     <section class="hero">
       <div class="hero__bg"></div>
 
@@ -69,7 +69,7 @@
       </div>
     </section>
 
-        <!-- 3) Main Content (MRT + Cards) -->
+    <!-- 3) Main Content (MRT + Cards) -->
     <section class="main-content">
       <div class="main-content__container">
 
@@ -91,7 +91,7 @@
         <div class="attraction-grid"></div>
           <!-- 用 /api/attractions 動態注入 -->
           <!-- <article class="attraction-card" data-attraction-id="1">
-            <a class="attraction-card__link" href="/attractionn/<id>>
+            <a class="attraction-card__link" href="/attraction/<id>>
               <div class="attraction-card__media">
                 <img
                   class="attraction-card__image"
@@ -113,13 +113,12 @@
 
         <!-- Infinite scroll sentinel（哨兵元素） --> 
         <div class="main-content__sentinel"></div>
-
       </div>
     </section>
   </main>
 
   <!-- 4) Footer -->
-  <footer class="footer" role="contentinfo">
+  <footer class="footer">
     <div class="footer__container">
       <small class="footer__text">COPYRIGHT © 2021 台北一日遊</small>
     </div>

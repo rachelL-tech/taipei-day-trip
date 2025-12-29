@@ -1,3 +1,4 @@
+/* ===== INDEX Page ===== */
 /* ===== Base reset ===== */
 *,
 *::before,
@@ -11,8 +12,8 @@ body {
 }
 
 a { color: inherit; text-decoration: none; } /* 連結顏色繼承父元素的文字色，不用瀏覽器預設藍/紫 */
-ul { margin: 0; padding: 0; list-style: none; } /* 瀏覽器會預設縮排與外距。清掉更容易用 Flex/Grid 自己排間距 */
-img { display: block; max-width: 100%; height: auto; } /* 讓讓圖片不會超出容器寬度、在小螢幕自適應 */
+ul { margin: 0; padding: 0; list-style: none; } /* 瀏覽器會預設縮排與外距，清掉更容易用 Flex/Grid 自己排間距 */
+img { display: block; max-width: 100%; height: auto; } /* 讓圖片不會超出容器寬度、在小螢幕自適應 */
 button { font: inherit; }
 
 /* ===== Containers ===== */
@@ -22,13 +23,14 @@ button { font: inherit; }
 .footer__container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 10px;
+  padding: 0 15px;
 }
 
 /* ===== Header ===== */
 .header {
   background: #fff;
   height: 54px;
+  border-bottom: #E8E8E8 1px solid;
 }
 
 .header--sticky {
@@ -55,13 +57,13 @@ button { font: inherit; }
 .header__nav {
   display: flex;
   align-items: center;
-  gap: 10px;
   white-space: nowrap;
 }
 
 .header__nav-link {
   font-size: 16px;
   color: #666666;
+  padding: 10px 10px;
 }
 
 /* .header__nav-link:hover { color: #448899; } */
@@ -275,7 +277,7 @@ button { font: inherit; }
 }
 
 .mrt-scroll__item {
-  flex: 0 0 auto;         /* 每個 item 不要被壓縮 */
+  flex: 0 0 auto; /* 每個 item 不要被壓縮 */
 }
 
 .mrt-scroll__btn {
@@ -288,10 +290,10 @@ button { font: inherit; }
   padding: 9px 15px;
 }
 
-/* .mrt-scroll__btn:hover {
+.mrt-scroll__btn:hover {
   color: #448899;
   font-weight: 700;
-} */
+}
 
 
 /* ===== Attraction Card ===== */
@@ -371,12 +373,11 @@ button { font: inherit; }
 
 /* ===== RWD：Tablet (<=1200px) ===== */
 @media (max-width: 1200px) {
-    .header__container,
     .hero__container,
     .main-content__container,
     .footer__container {
-        width: 90%;
-        margin: 0 auto;
+      width: 90%;
+      margin: 0 auto;
     }
 
   /* 平板改 2 欄，寬度自適應 */
@@ -387,6 +388,10 @@ button { font: inherit; }
 
 /* ===== RWD：Mobile (<=600px) ===== */
 @media (max-width: 600px) {
+  .header__container{
+    padding: 0 10px;
+  }
+
   .hero__content { margin: 76px 0 75px; }
 
   .search-bar__group { width: 320px; }
@@ -397,5 +402,358 @@ button { font: inherit; }
   .attraction-grid {
     grid-template-columns: 1fr;
     gap: 15px;
+  }
+}
+
+/* ===== Attraction Page ===== */
+.attraction-content { margin: 40px 0}
+
+.attraction-content__container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+.attraction-hero {
+  display: flex;
+  gap: 30px;
+  align-items: flex-start;
+  min-height: 400px;
+}
+
+.attraction-hero__gallery {
+  flex: 0 0 540px;  /* flex-grow: 0（不放大）、flex-shrink: 0（不縮小）、flex-basis: 540px（基準寬 540px） */
+}
+
+.carousel {
+  position: relative; /* 讓 carousel__btn 定位 */
+  width: 100%;
+  border-radius: 5px;
+  overflow: hidden;
+  background: #f3f3f3;
+  aspect-ratio: 540 / 400; /* 給容器一個固定長寬比，在還沒載入圖片時也有穩定高度 */
+}
+
+.carousel__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* 不變形地填滿整個容器 */
+}
+
+/* 左右箭頭 */
+.carousel__btn {
+  position: absolute;
+  top: 50%; /* 按鈕的上緣放在容器高度的 50%（中間） */
+  transform: translateY(-50%); /* 把按鈕往上拉「自己高度的一半」，讓按鈕的「中心點」對齊容器垂直正中央 */
+  width: 36px;
+  height: 36px;
+  border: 0; /* 移除 <button> 預設邊框 */
+  cursor: pointer;
+  opacity: 0.7;
+  background: rgba(255,255,255,0.6);
+  border-radius: 50%; /* 方形加上圓角 50% 就會變圓形 */
+}
+
+.carousel__btn:hover {
+  opacity: 1;
+}
+
+.carousel__btn--left {
+  left: 10px;
+  background-image: url("/static/images/btn_left.png");
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+.carousel__btn--right { 
+  right: 10px;
+  background-image: url("/static/images/btn_right.png");
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* indicator */
+.carousel__indicator {
+  position: absolute;
+  left: 0px;
+  right: 0px;
+  bottom: 0px;
+  display: flex;
+  height: 5px;
+}
+
+.carousel__segment {
+  flex: 1 1 0; /* 平均分配寬度，flex-basis: 0 代表元素的初始寬度為 0，換句話說，元素的起始尺寸會由 flex-grow 來決定 */
+  background: #FFFFFF;
+  opacity: 0.75;
+}
+
+.carousel__segment.is-active {
+  background: #000000;
+}
+
+.attraction-hero__info {
+  flex: 0 1 600px; /* 不用放大，但允許變窄以避免溢出 */
+  min-width: 0;
+  height: 390px;
+}
+
+.attraction-hero__title {
+  margin: 0 0 15px; /* 上 / 左右 / 下 */
+  font-weight: 700;
+  font-size: 24px;
+  color: #666;
+  height: 33px;
+}
+
+.attraction-hero__subtitle {
+  margin: 0 0 20px;
+  font-size: 16px;
+  font-weight: 400;
+  color: #666;
+}
+
+/* booking-card */
+.booking-card {
+  width: 100%;
+  background: #e8e8e8;
+  border-radius: 5px;
+  padding: 15px 20px;
+  height: 302px;
+}
+
+.booking-card__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #666;
+  height: 22px;
+  line-height: 24px;
+}
+
+.booking-card__desc {
+  margin: 15px 0 0;
+  font-size: 16px;
+  font-weight: 400;
+  color: #666;
+  height: auto;  
+  line-height: 1.4;
+}
+
+.booking-card__form {
+  display: flex;
+  flex-direction: column;
+}
+
+.booking-card__row {
+  display: flex;
+  align-items: center;
+  margin: 15px 0 0;
+  gap: 5px;
+  height: 22px;
+  line-height: 13.3px;
+}
+
+.booking-card__row--date {
+  height: 35px;
+}
+
+.booking-card__label {
+  flex: 0 0 auto; /* flex-basis: auto 代表該元素的初始尺寸是由元素本身的內容決定的 */
+  font-size: 16px;
+  font-weight: 700;
+  color: #666;
+  white-space: nowrap;
+}
+
+/* 日期 */
+.booking-card__input {
+  height: 35px;
+  width: 193px; 
+  padding: 5px 10px 5px 10px;
+  border: 0;
+  background: #fff;
+  font-size: 16px;
+  color: #000;
+}
+
+/* 時段 */
+.booking-card__time {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.booking-card__radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.booking-card__radio input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  display: grid; /* ::before 生成的偽元素，預設行為像行內元素（inline），不吃 width/height（寬高由文字行盒決定），因此把父層變成 grid，偽元素就成為 grid item（能吃寬高）。也可以偽元素 display:block;＋margin:auto; 或 position:relative;＋ 偽元素 position:absolute; inset:0;＋margin:auto; */
+  place-items: center; /* 把圓點置中 */
+  background: #fff;
+}
+
+.booking-card__radio input::before {
+  content: "";
+  width: 18px; /* 圓點的尺寸 */
+  height: 18px; /* 圓點的尺寸 */
+  border-radius: 50%;
+  transform: scale(0); /* 圓點初始大小（存在但縮到看不見） */
+  transition: transform 0.12s ease-in-out; /* 當 transform 的值改變時（scale(0) → scale(1)），以 0.12 秒、先慢後快再慢的節奏平滑過渡 */
+  background: #448899;
+}
+
+.booking-card__radio input:checked::before {
+  transform: scale(1); /* 被選取時，圓點放大顯示 */
+}
+
+.booking-card__radio-text {
+  font-size: 16px;
+  font-weight: 400;
+  color: #666;
+}
+
+.booking-card__price {
+  font-size: 16px;
+  font-weight: 400;
+  color: #666;
+}
+
+.booking-card__submit {
+  align-self: flex-start;
+  margin: 25px 0px auto;
+  padding: 10px 20px;
+  border: 0;
+  border-radius: 5px;
+  background: #448899;
+  color: #fff;
+  font-size: 19px;
+  line-height: 16px;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.booking-card__submit:hover {
+  filter: brightness(0.95);
+}
+
+/* 分隔線 */
+.attraction-divider {
+  height: 1px;
+  background: #e8e8e8;
+  margin: 40px 0 40px;
+}
+
+/* 下方內文 */
+.attraction-detail {
+  min-height: 362px;
+  height: auto;
+  margin: 0 0 40px;
+  padding: 0 10px;
+}
+
+.attraction-detail__description {
+  margin: 10px 0 20px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #666;
+}
+
+.attraction-detail__heading {
+  font-size: 16px;
+  font-weight: 700;
+  color: #666;
+}
+
+.attraction-detail__text {
+  margin: 0 0 20px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #666;
+}
+
+/* ===== RWD：Tablet (<=1200px) ===== */
+@media (max-width: 1200px) {
+  .attraction-content__container {
+    width: 90%;
+    padding: 0 10px;
+  }
+
+  .attraction-hero {
+    flex-direction: column;
+    gap: 20px;
+    margin: 0; /* 上方圖片貼齊 header */
+    height: auto;
+  }
+
+  /* 圖片滿版 */
+  .attraction-hero__gallery {
+    flex: none;
+    width: 100vw;
+    max-width: none;
+    padding: 0 10px;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+  }
+
+  .attraction-hero__info {
+    flex: 0 1 auto;
+    width: 100%;
+    height: auto;
+  }
+}
+
+/* ===== RWD：Mobile (<=600px) ===== */
+@media (max-width: 600px) {
+  .attraction-content { 
+    margin: 0;
+    display: flex;
+    justify-content: center;
+  }
+
+  .attraction-content__container {
+    width: 100%;
+  }
+
+  .attraction-hero__gallery {
+    padding: 0;
+  }
+
+  .carousel {
+    aspect-ratio: 360 / 350;
+    border-radius: 0; /* 手機滿版不圓角 */
+  }
+
+  .attraction-hero__title {
+    margin: 10px 0 10px;
+    height: auto;
+  }
+
+  .attraction-hero__subtitle {
+    margin: 0 0 20px;
+  }
+
+  .booking-card {
+    height: auto;
+  }
+
+  .booking-card__row {
+    flex-wrap: wrap;
+  }
+
+  .attraction-detail {
+    padding: 0;
+    margin: 0 0 40px;
   }
 }
