@@ -6,9 +6,8 @@ import mysql.connector.pooling
 import os # 讀取環境變數用（DB 連線、JWT_SECRET）
 from dotenv import load_dotenv
 import time  # 產生 token 過期時間（exp）用 UNIX timestamp
-from datetime import datetime, timedelta, timezone # 產生 token 過期時間（exp）用 UNIX timestamp
 import jwt # PyJWT：負責 JWT encode / decode
-from passlib.hash import bcrypt  # bcrypt：雜湊密碼與驗證密碼
+import bcrypt  # bcrypt：雜湊密碼與驗證密碼
 
 app = FastAPI()
 
@@ -35,17 +34,19 @@ pool = mysql.connector.pooling.MySQLConnectionPool(
 	pool_reset_session=True,
 	**dbconfig
 )
-def get_connection(): # 從 pool 拿連線
+
+# 從 pool 拿連線
+def get_connection():
 	return pool.get_connection()
 
-## JWT設定
+## JWT 設定
 JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret-change-me")  # JWT 簽章密鑰
 JWT_ALG = "HS256"  # JWT 使用 HS256 演算法（對稱式：同一把 secret 簽章與驗證）
 JWT_EXPIRE_SECONDS = 7 * 24 * 60 * 60  # token 有效期 7 天
 
-# 產生 JWT token
+# 產生 JWT token（本身是由伺服器簽發，不是密碼算出來的，代表某時某刻，伺服器曾經認證過這個人，並允許他在某段時間內帶著這個 token 行動）
 def make_token(user_id: int, name: str, email: str):
-    payload = {  # JWT payload（放在 token 內的資料）
+    payload = {  # JWT payload（放在 token 裡的「聲明」）
         "id": user_id,
         "name": name,
         "email": email, 
@@ -71,11 +72,11 @@ def get_bearer_token(request: Request):
 ## 路由
 # 註冊一個新的會員
 @app.post("/api/user")
-async def user_signup(
-	name: str = Form(...), 
-    email: str = Form(...), 
-    password: str = Form(...) 
-):
+async def user_signup(body: dict = Body(...)):
+	name = str(body.get("name", "")).strip()  # 取 name，轉字串並去掉前後空白
+	email = str(body.get("email", "")).strip()  # 取 email，轉字串並去掉前後空白
+	password = str(body.get("password", ""))  # 取 password
+
 	if name == "" or email == "" or password == "": 
 		return JSONResponse(status_code=400, content={"error": True, "message": "請輸入姓名、信箱和密碼"})
 	
@@ -91,7 +92,12 @@ async def user_signup(
 		if existing:
 			return JSONResponse(status_code=400, content={"error": True, "message": "註冊失敗，重複的 Email"})
 		
-		pw_hash = bcrypt.hash(password)  # 把明文密碼做 bcrypt 雜湊，再存進資料庫
+		# 把明文密碼做 bcrypt 雜湊，再存進資料庫
+		pw_bytes = password.encode("utf-8") # 人類看的 str → 電腦看的 bytes
+		if len(pw_bytes) > 72: # 因為 bcrypt 只安全處理前 72 個 「byte」，再多會被截斷
+			return JSONResponse(status_code=400, content={"error": True, "message": " 密碼過長"})
+		pw_hash = bcrypt.hashpw(pw_bytes, bcrypt.gensalt()).decode("utf-8") # bcrypt.hashpw()回傳的是 bytes，用.decode()轉回 str
+
 		cursor.execute(
             "INSERT INTO users(name, email, password_hash) VALUES(%s, %s, %s)",  
             (name, email, pw_hash),
@@ -99,7 +105,7 @@ async def user_signup(
 		con.commit()
 		return {"ok": True}
 
-	except mysql.connector.Error as e:
+	except Exception as e:
 		if con:
 			con.rollback()
 		return JSONResponse(status_code=500, content={"error": True, "message": str(e)})
@@ -112,10 +118,10 @@ async def user_signup(
 
 # 登入會員帳戶
 @app.put("/api/user/auth")
-def signin(
-	email: str = Form(...), 
-    password: str = Form(...) 
-):
+async def signin(body: dict = Body(...)):
+	email = str(body.get("email", "")).strip()
+	password = str(body.get("password", ""))
+
 	if email == "" or password == "": 
 		return JSONResponse(status_code=400, content={"error": True, "message": "請輸入信箱和密碼"})
 	
@@ -128,17 +134,21 @@ def signin(
 
 		cursor.execute("SELECT id, name, email, password_hash FROM users WHERE email=%s",(email,))
 		row = cursor.fetchone()
-
+		
 		if not row: # 找不到使用者
-			return JSONResponse(status_code=400, content={"error": True, "message": "登入失敗，帳號或密碼錯誤"})
-		if not bcrypt.verify(password, row["password_hash"]): # 明碼不符合雜湊
+			return JSONResponse(status_code=400, content={"error": True, "message": "登入失敗，帳號或密碼錯誤"}) # 不要讓使用者知道是帳號還是密碼錯誤
+		pw_ok = bcrypt.checkpw(
+			password.encode("utf-8"),
+			row["password_hash"].encode("utf-8"),
+		) # checkpw()從第二個參數（hash）裡拆出演算法版本、cost、salt 後，用同一組設定+同一個 salt，拿第一個參數的密碼重算一次 bcrypt，比較「重算出來的 hash」和「資料庫這串 hash」是不是一樣，再回傳 True（密碼正確） / False
+		if not pw_ok: # 明碼不符合雜湊
 			return JSONResponse(status_code=400, content={"error": True, "message": "登入失敗，帳號或密碼錯誤"})
 		
 		token = make_token(row["id"], row["name"], row["email"]) # 產生 JWT token
 
-		return {"token": token} # （給前端存到 localStorage）
+		return {"token": token} # 給前端存到 localStorage
 
-	except mysql.connector.Error as e:
+	except Exception as e:
 		if con:
 			con.rollback()
 		return JSONResponse(status_code=500, content={"error": True, "message": str(e)})
@@ -152,13 +162,13 @@ def signin(
 
 # 取得當前登入的會員資訊
 @app.get("/api/user/auth")
-async def get_user(request: Request): # request 用來拿 Authorization header
+def get_user(request: Request): # 用 request 拿 Authorization header
 	token = get_bearer_token(request)
 	if not token: # 沒 token 表示沒登入
 		return {"data": None} 
 	
 	try: # 解碼 token
-		payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG]) # decode 要用list / iterable的型別，代表指定哪些演算法的 token 被接受
+		payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG]) # decode 時要用list / iterable的型別，代表允許哪些演算法的 token 被接受
 		return {
 			"data": {
 				"id": payload["id"],
