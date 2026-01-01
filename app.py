@@ -146,7 +146,7 @@ async def signin(body: dict = Body(...)):
 		
 		token = make_token(row["id"], row["name"], row["email"]) # 產生 JWT token
 
-		return {"token": token} # 給前端存到 localStorage
+		return {"token": token} # 給前端存 LocalStorage
 
 	except Exception as e:
 		if con:

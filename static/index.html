@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/auth.js" defer></script>
   <script src="/static/index.js" defer></script>
   <title>台北一日遊</title>
 </head>
@@ -15,7 +16,7 @@
 
       <nav class="header__nav">
         <a class="header__nav-link" href="/booking">預定行程</a>
-        <a class="header__nav-link" href="/#signin">登入/註冊</a>
+        <a class="header__nav-link" href="#" id="auth-link">登入/註冊</a> <!-- href="#"代表跳到同頁頂端，並把 # 加到網址；href="/#"則是點了會跳到網站根路徑 /（首頁）的 hash # -->
       </nav>
     </div>
   </header>
@@ -124,5 +125,32 @@
     </div>
   </footer>
 
+  <!-- Auth Modal -->
+  <dialog class="auth-dialog" id="auth-dialog">
+    <div class="auth-dialog__bar"></div>
+
+    <button class="auth-dialog__close" type="button" data-action="close"></button>
+
+    <h3 class="auth-dialog__title" id="auth-title">登入會員帳號</h3>
+
+    <!-- Sign In -->
+    <form class="auth-form" id="signin-form">
+      <input class="auth-form__input" name="email" type="email" placeholder="輸入電子信箱" required />
+      <input class="auth-form__input" name="password" type="password" placeholder="輸入密碼" required />
+      <button class="auth-form__submit" type="submit">登入帳戶</button>
+      <p class="auth-form__switch">還沒有帳戶？<a href="#" data-action="to-signup">點此註冊</a></p>
+    </form>
+
+    <!-- Sign Up -->
+    <form class="auth-form" id="signup-form" hidden>
+      <input class="auth-form__input" name="name" type="text" placeholder="輸入姓名" required />
+      <input class="auth-form__input" name="email" type="email" placeholder="輸入電子郵件" required />
+      <input class="auth-form__input" name="password" type="password" placeholder="輸入密碼" required />
+      <button class="auth-form__submit" type="submit">註冊新帳戶</button>
+      <p class="auth-form__switch">已經有帳戶了？<a href="#" data-action="to-signin">點此登入</a></p>
+    </form>
+
+    <p class="auth-dialog__message" id="auth-message"></p>
+  </dialog>
 </body>
 </html>
