@@ -16,7 +16,7 @@
 
       <nav class="header__nav">
         <a class="header__nav-link" href="/booking">預定行程</a>
-        <a class="header__nav-link" href="#" id="auth-link">登入/註冊</a>
+        <a class="header__nav-link" href="#" id="auth-link"></a>
       </nav>
     </div>
   </header>
@@ -110,10 +110,12 @@
   </footer>
 
     <!-- Auth Modal -->
-  <dialog class="auth-dialog" id="auth-dialog">
+  <dialog class="auth-dialog" id="auth-dialog" hidden>
     <div class="auth-dialog__bar"></div>
 
-    <button class="auth-dialog__close" type="button" data-action="close"></button>
+    <button class="auth-dialog__close" type="button" data-action="close">
+      <div class="auth-dialog__close-icon"></div>
+    </button>
 
     <h3 class="auth-dialog__title" id="auth-title">登入會員帳號</h3>
 
@@ -122,6 +124,7 @@
       <input class="auth-form__input" name="email" type="email" placeholder="輸入電子信箱" required />
       <input class="auth-form__input" name="password" type="password" placeholder="輸入密碼" required />
       <button class="auth-form__submit" type="submit">登入帳戶</button>
+      <!--用 js 動態注入 <p class="auth-form__message" id="auth-message"></p> -->
       <p class="auth-form__switch">還沒有帳戶？<a href="#" data-action="to-signup">點此註冊</a></p>
     </form>
 
@@ -131,10 +134,9 @@
       <input class="auth-form__input" name="email" type="email" placeholder="輸入電子郵件" required />
       <input class="auth-form__input" name="password" type="password" placeholder="輸入密碼" required />
       <button class="auth-form__submit" type="submit">註冊新帳戶</button>
+      <!--用 js 動態注入 <p class="auth-form__message" id="auth-message"></p> -->
       <p class="auth-form__switch">已經有帳戶了？<a href="#" data-action="to-signin">點此登入</a></p>
     </form>
-
-    <p class="auth-dialog__message" id="auth-message"></p>
   </dialog>
 </body>
 </html>

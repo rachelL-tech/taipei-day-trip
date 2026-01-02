@@ -140,7 +140,7 @@ async def signin(body: dict = Body(...)):
 		pw_ok = bcrypt.checkpw(
 			password.encode("utf-8"),
 			row["password_hash"].encode("utf-8"),
-		) # checkpw()從第二個參數（hash）裡拆出演算法版本、cost、salt 後，用同一組設定+同一個 salt，拿第一個參數的密碼重算一次 bcrypt，比較「重算出來的 hash」和「資料庫這串 hash」是不是一樣，再回傳 True（密碼正確） / False
+		) # checkpw()從第二個參數（hash）裡拆出演算法版本、cost、salt 後，用同一組設定 + 同一個 salt，拿第一個參數的密碼重算一次 bcrypt，比較「重算出來的 hash」和「資料庫這串 hash」是不是一樣，再回傳 True（密碼正確） / False
 		if not pw_ok: # 明碼不符合雜湊
 			return JSONResponse(status_code=400, content={"error": True, "message": "登入失敗，帳號或密碼錯誤"})
 		
