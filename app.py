@@ -78,7 +78,7 @@ async def user_signup(body: dict = Body(...)):
 	password = str(body.get("password", ""))  # 取 password
 
 	if name == "" or email == "" or password == "": 
-		return JSONResponse(status_code=400, content={"error": True, "message": "請輸入姓名、信箱和密碼"})
+		return JSONResponse(status_code=400, content={"error": True, "message": "請完整填寫姓名、信箱和密碼"})
 	
 	con = None
 	cursor = None
