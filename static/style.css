@@ -293,7 +293,6 @@ button { font: inherit; }
   font-weight: 700;
 }
 
-
 /* ===== Attraction Card ===== */
 .attraction-grid {
   display: grid;
@@ -417,11 +416,15 @@ button { font: inherit; }
 
 .auth-dialog__title {
   margin: 15px 15px 0px;
-  text-align: center;
+  height: 27px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 24px;
   font-weight: 700;
   color: #666;
 }
+
 
 .auth-form[hidden] { display: none; }
 
@@ -459,7 +462,7 @@ button { font: inherit; }
   color: #666;
   height: 22px;
 }
-/* .auth-form__switch a { text-decoration: underline; } */
+.auth-form__switch a { text-decoration: underline; }
 
 .auth-form__message {
   height: 22px;
@@ -468,6 +471,7 @@ button { font: inherit; }
   font-weight: 500;
   color: #666;
 }
+.auth-form__message:empty { display: none; } /* visibility: hidden 時，元素仍佔位， margin 會保留；只有 display: none 時，才會連同 margin 一起消失 */
 .auth-form__message.is-error { color: #c43131; }
 .auth-form__message.is-success { color: #2a7b2a; }
 

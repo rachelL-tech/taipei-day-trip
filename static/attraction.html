@@ -110,7 +110,7 @@
   </footer>
 
     <!-- Auth Modal -->
-  <dialog class="auth-dialog" id="auth-dialog" hidden>
+  <dialog class="auth-dialog" id="auth-dialog">
     <div class="auth-dialog__bar"></div>
 
     <button class="auth-dialog__close" type="button" data-action="close">
@@ -124,17 +124,17 @@
       <input class="auth-form__input" name="email" type="email" placeholder="輸入電子信箱" required />
       <input class="auth-form__input" name="password" type="password" placeholder="輸入密碼" required />
       <button class="auth-form__submit" type="submit">登入帳戶</button>
-      <!--用 js 動態注入 <p class="auth-form__message" id="auth-message"></p> -->
+      <p class="auth-form__message"></p>
       <p class="auth-form__switch">還沒有帳戶？<a href="#" data-action="to-signup">點此註冊</a></p>
     </form>
 
     <!-- Sign Up -->
-    <form class="auth-form" id="signup-form" hidden>
+    <form class="auth-form" id="signup-form">
       <input class="auth-form__input" name="name" type="text" placeholder="輸入姓名" required />
       <input class="auth-form__input" name="email" type="email" placeholder="輸入電子郵件" required />
       <input class="auth-form__input" name="password" type="password" placeholder="輸入密碼" required />
       <button class="auth-form__submit" type="submit">註冊新帳戶</button>
-      <!--用 js 動態注入 <p class="auth-form__message" id="auth-message"></p> -->
+      <p class="auth-form__message"></p>
       <p class="auth-form__switch">已經有帳戶了？<a href="#" data-action="to-signin">點此登入</a></p>
     </form>
   </dialog>
