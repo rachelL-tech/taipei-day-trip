@@ -120,8 +120,9 @@
                 // 2.5 秒後自動切到登入表單
                 clearSignupTimer();
                 signupSuccessTimer = setTimeout(() => { // setTimeout 會回傳「計時器識別碼timerId」（在瀏覽器通常是數字，在 Node.js 通常是 Timeout 物件），可以拿這個 ID 之後去 clearTimeout(...) 取消還沒到期的計時器
-                    switchForm("signin");
                     signupForm.reset(); // 清掉註冊表單欄位
+                    switchForm("signin");
+                    signinForm.reset(); // 清掉登入表單欄位
                     signupSuccessTimer = null; // timer 執行完後把變數清掉，不會殘留一個舊的 ID
                 }, 2000);
                 return;
