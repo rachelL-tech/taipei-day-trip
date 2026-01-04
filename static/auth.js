@@ -26,7 +26,6 @@
         if (titleEl) titleEl.textContent = isSignup ? "註冊會員帳戶" : "登入會員帳戶";
         signupForm.hidden = !isSignup;
         signinForm.hidden = isSignup;
-        setMessage(); // 切換表單時清掉訊息
     }
 
     // 開/關 dialog
@@ -95,13 +94,10 @@
         const name = formData.get("name") ?? "";
         const email = formData.get("email") ?? "";
         const password = formData.get("password") ?? "";
-        // 也可以寫自己抓欄位值：
-        // const name: signupForm.name.value,
-        // const email: signupForm.email.value,
-        // const password: signupForm.password.value
 
         if (!name || !email || !password) {
             setMessage("請完整填寫姓名、信箱和密碼", "is-error");
+            setTimeout(() => setMessage(""), 2000);
             return;
         }
         
@@ -119,28 +115,71 @@
             
             if (json.ok) {
                 setMessage("註冊成功，請登入系統", "is-success");
+                setTimeout(() => setMessage(""), 2000);
 
+                // 2.5 秒後自動切到登入表單
                 clearSignupTimer();
-                signupSuccessTimer = setTimeout(() => {
-                    if (!dialog.open) return; // dialog 已關閉就不切換表單了
+                signupSuccessTimer = setTimeout(() => { // setTimeout 會回傳「計時器識別碼timerId」（在瀏覽器通常是數字，在 Node.js 通常是 Timeout 物件），可以拿這個 ID 之後去 clearTimeout(...) 取消還沒到期的計時器
                     switchForm("signin");
                     signupForm.reset(); // 清掉註冊表單欄位
-                    signupSuccessTimer = null;
-                }, 2500); // 2.5 秒後自動切到登入表單
+                    signupSuccessTimer = null; // timer 執行完後把變數清掉，不會殘留一個舊的 ID
+                }, 2000);
                 return;
             }else{
                 setMessage(`註冊失敗：${json.message}`, "is-error");
+                setTimeout(() => setMessage(""), 2000);
             }
         } catch (err) {
             setMessage("伺服器錯誤，請稍後再試", "is-error");
+            setTimeout(() => setMessage(""), 2000);
         } finally {
             if (btn) btn.disabled = false; // 不管成功失敗，request 完成後都把按鈕設回可點
         }
     }
 
     // Part 4-5: Sign In Procedure
-    // setMessage("登入失敗：帳號或密碼錯誤", "is-error");
-    // 要checkSignInStatus()?
+    function setToken(token) {
+        localStorage.setItem(TOKEN_KEY, token);
+    }
+
+    async function handleSigninSubmit(e) {
+        e.preventDefault();
+
+        const formData = new FormData(signinForm);
+        const email = formData.get("email") ?? "";
+        const password = formData.get("password") ?? "";
+
+        if(!email || !password){
+            setMessage("請輸入信箱和密碼", "is-error");
+            setTimeout(() => setMessage(""), 2000);
+        }
+
+        const btn = signinForm.querySelector('button[type="submit"]');
+        if (btn) btn.disabled = true;
+
+        try{
+            const res = await fetch("/api/user/auth", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password }),
+            });
+
+            const json = await res.json()
+            if (json.token) {
+                setToken(json.token);
+                location.reload(); // 把整個目前頁面重新載入一次（等同按下重新整理），但localStorage 不會被清掉
+                return;
+            }else{
+                setMessage(json.message, "is-error");
+                setTimeout(() => setMessage(""), 2000);
+            }
+        } catch (err){
+            setMessage("伺服器錯誤，請稍後再試", "is-error");
+            setTimeout(() => setMessage(""), 2000);
+        } finally {
+            if (btn) btn.disabled = false;
+        }
+    }
 
     // ===== 事件監聽 =====
     // 點擊 authLink 打開 dialog
@@ -148,7 +187,7 @@
         e.preventDefault();
         
         if (state.signedIn) {
-            // 已登入狀態下，點 authLink 是「登出系統」
+            // 已登入狀態下，點 authLink 是「登出系統」（Part 4-6: Sign Out Procedure）
             clearToken();
             location.reload();
         } else {
@@ -189,6 +228,9 @@
     
     // 送出註冊表單
     signupForm.addEventListener("submit", handleSignupSubmit);
+
+    // 送出登入表單
+    signinForm.addEventListener("submit", handleSigninSubmit);
 
     checkSignInStatus();
 })();
