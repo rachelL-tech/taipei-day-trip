@@ -66,7 +66,7 @@ button { font: inherit; }
   padding: 10px 10px;
 }
 
-/* .header__nav-link:hover { color: #448899; } */
+.header__nav-link:hover { color: #448899; }
 
 /* ===== Hero ===== */
 .hero {
@@ -181,9 +181,7 @@ button { font: inherit; }
 }
 
 /* ===== Category Dropdown Panel ===== */
-/* 預設 hidden */
 .category-dropdown__panel[hidden] { display: none; }
-
 .category-dropdown__panel {
   position: absolute;
   top: calc(100% + 5px);
@@ -210,10 +208,10 @@ button { font: inherit; }
   white-space: nowrap;
 }
 
-/* .category-dropdown__item:hover {
+.category-dropdown__item:hover {
   color: #448899;
   font-weight: 700;
-} */
+}
 
 /* ===== Main Content ===== */
 .main-content { margin: 40px 0}
@@ -295,7 +293,6 @@ button { font: inherit; }
   font-weight: 700;
 }
 
-
 /* ===== Attraction Card ===== */
 .attraction-grid {
   display: grid;
@@ -370,6 +367,113 @@ button { font: inherit; }
   font-size: 14px;
   font-weight: 700;
 }
+
+/* Auth Dialog */
+.auth-dialog {
+  border: 0;
+  padding: 0;
+  width: 340px;
+  max-width: calc(100% - 20px); /* 視窗太窄時不要超出畫面：最大寬度 = 視窗寬 - 20px（等於左右各留 10px 緩衝） */
+  border-radius: 5px;
+  overflow: hidden;
+  box-shadow: 0 4px 60px 0 rgba(170,170,170,1); /* 陰影效果：垂直往下 4px、模糊半徑 60px，1=不透明，讓彈窗看起來浮在頁面上。 */
+  position: relative;
+}
+
+.auth-dialog::backdrop {
+  background: rgba(0,0,0,0.25);
+}
+
+.auth-dialog__bar {
+  height: 10px;
+  background: linear-gradient(to right, #66AABB, #337788);
+}
+
+.auth-dialog__close {
+  position: absolute;
+  padding: 0;
+  top: 20px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #FFFFFF;
+}
+
+.auth-dialog__close-icon {
+  width: 16px;
+  height: 16px;
+  background: transparent;
+  background-image: url("/static/images/close_btn.png");
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.auth-dialog__title {
+  margin: 15px 15px 0px;
+  height: 27px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 700;
+  color: #666;
+}
+
+
+.auth-form[hidden] { display: none; }
+
+.auth-form {
+  margin: 15px 15px 16px;
+  width: 310px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.auth-form__input {
+  height: 47px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 16.5px 15px;
+  font-size: 16px;
+}
+
+.auth-form__submit {
+  height: 46px;
+  border: 0;
+  border-radius: 5px;
+  background: #448899;
+  color: #fff;
+  font-size: 19px;
+  cursor: pointer;
+}
+.auth-form__submit:hover { filter: brightness(0.95); }
+
+.auth-form__switch {
+  margin: 0;
+  text-align: center;
+  font-size: 16px;
+  color: #666;
+  height: 22px;
+}
+.auth-form__switch a { text-decoration: underline; }
+
+.auth-form__message {
+  height: 22px;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 500;
+  color: #666;
+}
+.auth-form__message:empty { display: none; } /* visibility: hidden 時，元素仍佔位， margin 會保留；只有 display: none 時，才會連同 margin 一起消失 */
+.auth-form__message.is-error { color: #c43131; }
+.auth-form__message.is-success { color: #2a7b2a; }
 
 /* ===== RWD：Tablet (<=1200px) ===== */
 @media (max-width: 1200px) {

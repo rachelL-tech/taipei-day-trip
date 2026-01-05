@@ -131,7 +131,7 @@
 
   function showSlide(targetIndex) {
     const count = images.length;
-    if (!imgEl || count === 0) return; // 如果 count === 0，左箭頭 click 時，currentIndex 會變 NaN
+    if (!imgEl || count === 0) return;
 
     currentIndex = normalizeIndex(targetIndex, count);
     imgEl.src = images[currentIndex];
