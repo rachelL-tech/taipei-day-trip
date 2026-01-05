@@ -13,7 +13,7 @@ app = FastAPI()
 
 PAGE_SIZE = 8 # 固定每頁 8 筆景點資料
 
-load_dotenv() # 找到專案資料夾裡的 .env 檔，讀取，把裡面的設定載入到系統的環境變數（environment variables）中
+load_dotenv() # 找到專案資料夾裡的 .env 檔，把裡面的設定載入到系統的環境變數中
 
 ## 資料庫連線設定
 DB_HOST = os.getenv("DB_HOST", "localhost") # 去系統的環境變數裡找 DB_HOST → 如果 .env 有設定、且 load_dotenv() 有成功執行，就會回傳 .env 裡 DB_HOST 的值。如果找不到 DB_HOST 這個環境變數，就回傳 "localhost"
