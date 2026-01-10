@@ -1,11 +1,177 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Booking</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/auth.js" defer></script>
+  <script src="/static/booking.js" defer></script>
+  <title>台北一日遊</title>
 </head>
-<body>
-  
+<body class="page">
+  <!-- 1) Sticky（固定） Header -->
+  <header class="header header--sticky">
+    <div class="header__container">
+      <a class="header__logo" href="/">台北一日遊</a>
+
+      <nav class="header__nav">
+        <a class="header__nav-link" href="/booking">預定行程</a>
+        <a class="header__nav-link" href="#" id="auth-link"></a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- 2) Main Content -->
+  <main class="page__main">
+    <div class="booking-page__container">
+      <h2 class="booking-page__headline">
+        您好，<span id="booking-user-name">Yakko</span>，待預訂的行程如下：
+      </h2>
+
+      <!-- 空狀態（無資料）-->
+      <p class="booking-page__empty" id="booking-empty">
+        目前沒有任何待預定的行程
+      </p>
+
+      <!-- 有資料狀態 -->
+      <div id="booking-content" class="booking-page__inner">
+        <!-- 景點資訊 -->
+        <section>
+          <div class="booking-trip-card">
+            <img
+              class="booking-trip-card__image"
+              id="booking-image"
+              src="https://www.travel.taipei/d_upload_ttn/sceneadmin/pic/11002568.jpg"
+              alt="預定景點圖片"
+            />
+
+            <div class="booking-trip-card__info">
+              <a class="booking-trip-card__name" href="/attraction/10">
+                台北一日遊：<span id="booking-attraction-name">平安鐘</span>
+              </a>
+
+              <p class="booking-trip-card__line">
+                <span class="booking-trip-card__label">日期：</span>
+                <span id="booking-date">2021-04-23</span>
+              </p>
+
+              <p class="booking-trip-card__line">
+                <span class="booking-trip-card__label">時間：</span>
+                <span id="booking-time">早上 9 點到下午 4 點</span>
+              </p>
+
+              <p class="booking-trip-card__line">
+                <span class="booking-trip-card__label">費用：</span>
+                <span id="booking-price">新台幣 2000 元</span>
+              </p>
+
+              <p class="booking-trip-card__line booking-trip-card__line--address">
+                <span class="booking-trip-card__label">地點：</span>
+                <span id="booking-address">台北市 大安區忠孝東路4段</span>
+              </p>
+
+              <button class="booking-trip-card__delete" type="button" id="booking-delete-btn"></button>
+            </div>
+          </div>
+        </section>
+
+        <hr class="booking-page__divider" />
+
+        <!-- 聯絡資訊 -->
+        <section>
+          <h3 class="booking-page__section-title">您的聯絡資訊</h3>
+
+          <div class="booking-page__form">
+            <div class="booking-page__form-row">
+              <label class="booking-page__label" for="contact-name">聯絡姓名：</label>
+              <input class="booking-page__input" id="contact-name" type="text" />
+            </div>
+
+            <div class="booking-page__form-row">
+              <label class="booking-page__label" for="contact-email">連絡信箱：</label>
+              <input class="booking-page__input" id="contact-email" type="email" />
+            </div>
+
+            <div class="booking-page__form-row">
+              <label class="booking-page__label" for="contact-phone">手機號碼：</label>
+              <input class="booking-page__input" id="contact-phone" type="tel" />
+            </div>
+
+            <p class="booking-page__hint">
+              請保持手機暢通，準時到達，導覽人員將用手機與您聯繫，務必留下正確的聯絡方式。
+            </p>
+          </div>
+        </section>
+
+        <hr class="booking-page__divider" />
+
+        <!-- 付款資訊 -->
+        <section>
+          <h3 class="booking-page__section-title">信用卡付款資訊</h3>
+
+          <div class="booking-page__form">
+            <div class="booking-page__form-row">
+              <label class="booking-page__label" for="card-number">卡片號碼：</label>
+              <input class="booking-page__input" id="card-number" type="text" placeholder="**** **** **** ****" />
+            </div>
+
+            <div class="booking-page__form-row">
+              <label class="booking-page__label" for="card-exp">過期時間：</label>
+              <input class="booking-page__input" id="card-exp" type="text" placeholder="MM / YY" />
+            </div>
+
+            <div class="booking-page__form-row">
+              <label class="booking-page__label" for="card-ccv">驗證密碼：</label>
+              <input class="booking-page__input" id="card-ccv" type="text" placeholder="CCV" />
+            </div>
+          </div>
+        </section>
+
+        <hr class="booking-page__divider" />
+
+        <section class="booking-page__action">
+          <p class="booking-page__total">總價：新台幣 <span id="booking-total">2000</span> 元</p>
+          <button class="booking-page__submit" type="button" id="booking-submit-btn">確認訂購並付款</button>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <!-- 4) Footer -->
+  <footer class="footer">
+    <div class="footer__container">
+      <small class="footer__text">COPYRIGHT © 2021 台北一日遊</small>
+    </div>
+  </footer>
+
+    <!-- Auth Modal -->
+  <dialog class="auth-dialog" id="auth-dialog">
+    <div class="auth-dialog__bar"></div>
+
+    <button class="auth-dialog__close" type="button" data-action="close">
+      <div class="auth-dialog__close-icon"></div>
+    </button>
+
+    <h3 class="auth-dialog__title" id="auth-title">登入會員帳號</h3>
+
+    <!-- Sign In -->
+    <form class="auth-form" id="signin-form">
+      <input class="auth-form__input" name="email" type="email" placeholder="輸入電子信箱" required />
+      <input class="auth-form__input" name="password" type="password" placeholder="輸入密碼" required />
+      <button class="auth-form__submit" type="submit">登入帳戶</button>
+      <p class="auth-form__message"></p>
+      <p class="auth-form__switch">還沒有帳戶？<a href="#" data-action="to-signup">點此註冊</a></p>
+    </form>
+
+    <!-- Sign Up -->
+    <form class="auth-form" id="signup-form">
+      <input class="auth-form__input" name="name" type="text" placeholder="輸入姓名" required />
+      <input class="auth-form__input" name="email" type="email" placeholder="輸入電子郵件" required />
+      <input class="auth-form__input" name="password" type="password" placeholder="輸入密碼" required />
+      <button class="auth-form__submit" type="submit">註冊新帳戶</button>
+      <p class="auth-form__message"></p>
+      <p class="auth-form__switch">已經有帳戶了？<a href="#" data-action="to-signin">點此登入</a></p>
+    </form>
+  </dialog>
 </body>
 </html>
