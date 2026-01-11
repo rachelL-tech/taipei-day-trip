@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS `users` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
-Create Table: CREATE TABLE `bookings` (
+CREATE TABLE IF NOT EXISTS `bookings` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `user_id` bigint NOT NULL,
   `attraction_id` int NOT NULL,
