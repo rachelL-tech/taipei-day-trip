@@ -76,7 +76,7 @@ def get_current_user(request: Request):
 		return None
 	try:
 		payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG]) # decode 時要用list / iterable的型別，代表允許哪些演算法的 token 被接受
-		return payload["id"]
+		return payload
 	except: # token 是壞掉的字串、簽章不對（secret 不匹配 / 被竄改）、token 過期、algorithms 不符合、程式自己的 bug（JWT_SECRET 沒定義、JWT_ALG 打錯字）
 		return None
 
@@ -174,7 +174,7 @@ async def signin(body: dict = Body(...)):
 @app.get("/api/user/auth")
 def get_user(request: Request): # 用 request 拿 Authorization header
 	payload = get_current_user(request)
-	if not payload: # 沒 token / token 無效 / 過期 / 驗章失敗
+	if not payload: # 沒 token / token 無效、過期 / 驗章失敗
 		return {"data": None} 
 	
 	return {
@@ -425,7 +425,7 @@ async def get_mrts():
 # 取得尚未下單的預定行程
 @app.get("/api/booking")
 async def get_booking(request: Request):
-	user_id = get_current_user(request)
+	user_id = get_current_user(request).get("id")
 	if not user_id:
 		return JSONResponse(status_code=403, content={"error": True, "message": "未登入系統，拒絕存取"})
 
@@ -447,7 +447,7 @@ async def get_booking(request: Request):
 			"SELECT id, name, address FROM attractions WHERE id=%s", (attraction_id,)
 		)
 		info = cursor.fetchone()
-		if not info: # 正常不該發生，因為 booking 裡的 attraction_id 有設 foreign key constraints（FOREIGN KEY (attraction_id) REFERENCES attractions(id) ON DELETE CASCADE），不可能 INSERT/UPDATE 不存在的景點，就算景點被刪除，也不會留下該筆 booking
+		if not info: # 正常不該發生，因為 booking 裡的 attraction_id 有設 foreign key constraints（FOREIGN KEY (attraction_id) REFERENCES attractions(id) ON DELETE CASCADE），不可能 INSERT/UPDATE 不存在的景點；就算景點被刪除，也不會留下該筆 booking
 			return JSONResponse(status_code=500, content={"error": True, "message": "預定行程的景點不存在"})
 		
 		cursor.execute(
@@ -484,7 +484,7 @@ async def get_booking(request: Request):
 # 建立新的預定行程
 @app.post("/api/booking")
 async def create_booking(request: Request, body: dict = Body(...)):
-	user_id = get_current_user(request)
+	user_id = get_current_user(request).get("id")
 	if not user_id:
 		return JSONResponse(status_code=403, content={"error": True, "message": "未登入系統，拒絕存取"})
 	
@@ -498,7 +498,7 @@ async def create_booking(request: Request, body: dict = Body(...)):
 		price = int(price)
 	except: # int()失敗的情形，如傳入 None（TypeError：傳 Null、缺欄位） / 空字串、空白字串（ValueError） / 非數字字串（ValueError）） / 浮點數字串（ValueError）/ 其他型別（TypeError：像[]）
 		return JSONResponse(status_code=400, content={"error": True, "message": "建立失敗，輸入不正確或其他原因"})
-	if not date or time not in ["morning", "afternoon"]: # date 不能是空的或None（因為date DATE NOT NULL）；time 只能是 morning / afternoon
+	if not date or time not in ["morning", "afternoon"]: # date 不能是空的或 None（因為date DATE NOT NULL）；time 只能是 morning / afternoon
 		return JSONResponse(status_code=400, content={"error": True, "message": "建立失敗，輸入不正確或其他原因"})
 	
 	con = None
@@ -533,7 +533,7 @@ async def create_booking(request: Request, body: dict = Body(...)):
 # 刪除目前的預定行程
 @app.delete("/api/booking")
 async def delete_booking(request: Request):
-	user_id = get_current_user(request)
+	user_id = get_current_user(request).get("id")
 	if not user_id:
 		return JSONResponse(status_code=403, content={"error": True, "message": "未登入系統，拒絕存取"})
 	

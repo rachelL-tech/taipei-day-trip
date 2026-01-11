@@ -508,7 +508,7 @@ button { font: inherit; }
 }
 
 /* ===== Attraction Page ===== */
-.attraction-content { margin: 40px 0}
+.page__main { padding: 40px 0 0; }
 
 .attraction-content__container {
   max-width: 1200px;
@@ -874,7 +874,7 @@ body .page__main { /* 但 main 內容區仍維持白底 */
 .booking-page__container {
   max-width: 1000px;
   margin: 0 auto; /* 上下 margin 0，左右 auto → 水平置中（前提是有 max-width/width） */
-  padding: 40px 0px 40px;
+  padding: 0px 0px 40px;
 }
 
 .booking-page__headline {
