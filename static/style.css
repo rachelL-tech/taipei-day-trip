@@ -1046,7 +1046,7 @@ body .page__main { /* 但 main 內容區仍維持白底 */
 @media (max-width: 700px) {
   .booking-page__container {
     width: 100%;
-    padding: 40px 10px 40px;
+    padding: 0px 10px 40px;
   }
 
   .booking-page__inner{
