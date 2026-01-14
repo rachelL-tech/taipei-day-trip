@@ -6,6 +6,7 @@
   <link rel="stylesheet" href="/static/style.css">
   <script src="/static/auth.js" defer></script>
   <script src="/static/booking.js" defer></script>
+  <script src="https://js.tappaysdk.com/sdk/tpdirect/v5.19.2"></script>
   <title>台北一日遊</title>
 </head>
 <body class="page">
@@ -112,17 +113,20 @@
           <div class="booking-page__form">
             <div class="booking-page__form-row">
               <label class="booking-page__label" for="card-number">卡片號碼：</label>
-              <input class="booking-page__input" id="card-number" type="text" placeholder="**** **** **** ****" />
+              <!-- <input class="booking-page__input" id="card-number" type="text" placeholder="**** **** **** ****" /> -->
+              <div class="tpfield" id="card-number"></div>
             </div>
 
             <div class="booking-page__form-row">
               <label class="booking-page__label" for="card-exp">過期時間：</label>
-              <input class="booking-page__input" id="card-exp" type="text" placeholder="MM / YY" />
+              <!-- <input class="booking-page__input" id="card-exp" type="text" placeholder="MM / YY" /> -->
+              <div class="tpfield" id="card-expiration-date"></div>
             </div>
 
             <div class="booking-page__form-row">
               <label class="booking-page__label" for="card-ccv">驗證密碼：</label>
-              <input class="booking-page__input" id="card-ccv" type="text" placeholder="CCV" />
+              <!-- <input class="booking-page__input" id="card-ccv" type="text" placeholder="CCV" /> -->
+              <div class="tpfield" id="card-ccv"></div>
             </div>
           </div>
         </section>

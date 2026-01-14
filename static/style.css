@@ -972,6 +972,23 @@ body .page__main { /* 但 main 內容區仍維持白底 */
   height: 24px;
 }
 
+/* ===== TapPay Fields ===== */
+.tpfield {
+  width: 200px;
+  height: 38px;
+  padding: 10px 10px;
+  border: 1px solid #E8E8E8;
+  border-radius: 5px;
+  background: #fff;
+  font-size: 16px;
+}
+
+/* TapPay 會在 focus 時幫容器自動加上這個 class */
+.tappay-field-focus {
+  border-color: #66afe9;
+  box-shadow: 0 0 0 3px rgba(102, 175, 233, .25);
+}
+
 /* form rows */
 .booking-page__form-row {
   display: flex; /* 一行內「label + input」水平排 */
@@ -1071,15 +1088,6 @@ body .page__main { /* 但 main 內容區仍維持白底 */
 
   .booking-trip-card__line--address {
     margin: 0;
-  }
-
-  .booking-page__label {
-    min-width: 80px;
-  }
-
-  .booking-page__input {
-    width: 100%;
-    max-width: 260px;
   }
 
   .booking-page__hint {
