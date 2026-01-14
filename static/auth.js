@@ -1,10 +1,11 @@
 (() => {
     const TOKEN_KEY = "TOKEN"; // 拿來當 localStorage 的 key 名稱
     const state = { signedIn: false };
+    const REDIRECT_KEY = "REDIRECT_AFTER_LOGIN";
+    const PENDING_BOOKING_KEY = "PENDING_BOOKING";
 
     const authLink = document.querySelector("#auth-link");
     const dialog = document.querySelector("#auth-dialog");
-    const titleEl = document.querySelector("#auth-title");
     const signinForm = document.querySelector("#signin-form");
     const signupForm = document.querySelector("#signup-form");
 
@@ -23,6 +24,7 @@
     // 切換 form
     function switchForm(form) {
         const isSignup = form === "signup";
+        const titleEl = document.querySelector("#auth-title");
         if (titleEl) titleEl.textContent = isSignup ? "註冊會員帳戶" : "登入會員帳戶";
         signupForm.hidden = !isSignup;
         signinForm.hidden = isSignup;
@@ -30,12 +32,13 @@
 
     // 開/關 dialog
     function openAuthDialog() {
-        switchForm("signin"); // 預設打開是登入表單，以符合「At the first shot, show a form for user sign in」。 HTML 寫 signup-form hidden 只保證「頁面第一次載入時」的預設是登入表單。因此在關閉 dialog 後，DOM 狀態不會自動回到 HTML 初始狀態，只要使用者曾經切換到註冊表單，就要確保他在下次打開表單前，把表單切回登入表單
+        switchForm("signin"); // 預設打開是登入表單，以符合「At the first shot, show a form for user sign in」： HTML 寫 signup-form hidden 只保證「頁面第一次載入時」的預設是登入表單；在關閉 dialog 後，DOM 狀態不會自動回到 HTML 初始狀態。因為使用者有可能曾經切換到註冊表單並關閉，因此要確保他在下次打開表單前，把表單切回登入表單
         dialog.showModal();
     }
     function closeAuthDialog() {
         dialog.close();
     }
+    window.AuthDialog = { open: openAuthDialog, close: closeAuthDialog }; // 把 openAuthDialog / closeAuthDialog 暴露到全域變數，讓其他js也能呼叫
 
     // Part 4-3: User Sign-In Status Checking Procedure
     function renderAuthLink() {
@@ -62,12 +65,12 @@
         try {
             const res = await fetch("/api/user/auth", {
                 headers: { Authorization: `Bearer ${token}` },
-            }); // 任務要求"fetch User API to get current signed-in user information"，確認 token 有效性後，再渲染 authLink
+            }); // 任務要求"fetch User API to get current signed-in user information"　→ 要確認 token 有效性後，再渲染 authLink
 
             const json = await res.json();
 
             state.signedIn = !!json.data;
-            if (!json.data) { // token 無效：token 已過期、密鑰換了、格式壞了、被竄改
+            if (!json.data) { // {"data": None} 的情形：沒 token / token 無效、過期 / 驗章失敗
                 clearToken(); // 清掉 localStorage 的無效 token
             }
         } catch {
@@ -76,6 +79,7 @@
             renderAuthLink();
         }
     }
+    window.checkSignInStatus = checkSignInStatus; // 把 checkSignInStatus 暴露到全域變數，讓其他js也能呼叫
 
     // Part 4-4: Sign Up Procedure
     // 註冊成功後，自動切到登入表單的 timer
@@ -102,7 +106,7 @@
         }
         
         const btn = signupForm.querySelector('button[type="submit"]');
-        if (btn) btn.disabled = true; // 避免防止使用者在 request 還沒回來前一直狂點，造成重複送出表單，及競態問題（race condition）、更好的 UX（按下去後按鈕變不可點，使用者知道「正在處理」）
+        if (btn) btn.disabled = true; // 避免使用者在 request 還沒回來前一直狂點，造成重複送出表單及競態問題（race condition）、以及更好的 UX（按下去後按鈕變不可點，使用者知道「正在處理」）
 
         try {
             const res = await fetch("/api/user", {
@@ -115,9 +119,9 @@
             
             if (json.ok) {
                 setMessage("註冊成功，請登入系統", "is-success");
-                setTimeout(() => setMessage(""), 2000);
+                setTimeout(() => setMessage(""), 1000);
 
-                // 2.5 秒後自動切到登入表單
+                // 1秒後自動切到登入表單
                 clearSignupTimer();
                 signupSuccessTimer = setTimeout(() => { // setTimeout 會回傳「計時器識別碼timerId」（在瀏覽器通常是數字，在 Node.js 通常是 Timeout 物件），可以拿這個 ID 之後去 clearTimeout(...) 取消還沒到期的計時器
                     signupForm.reset(); // 清掉註冊表單欄位
@@ -158,7 +162,7 @@
         const btn = signinForm.querySelector('button[type="submit"]');
         if (btn) btn.disabled = true;
 
-        try{
+        try{ // 嘗試送出登入請求
             const res = await fetch("/api/user/auth", {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
@@ -167,37 +171,117 @@
 
             const json = await res.json()
             if (json.token) {
-                setToken(json.token);
-                location.reload(); // 把整個目前頁面重新載入一次（等同按下重新整理），但localStorage 不會被清掉
+                const token = json.token;
+                setToken(token);
+
+                // 如果使用者有點擊過「預定行程(header__nav-link)」，登入成功要自動跳轉去 /booking
+                const redirect = popRedirect();
+                if (redirect) {
+                    window.location.href = redirect;
+                    return;
+                }
+
+                // 如果使用者有點擊過「開始預約行程(booking-card__submit)」，登入成功要自動新增行程，並自動跳轉去 /booking
+                const pending = getPendingBooking();
+                if (pending) {
+                    try {
+                        const bookRes = await fetch("/api/booking", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                Authorization: `Bearer ${token}`,
+                            },
+                            body: JSON.stringify(pending),
+                        });
+
+                        const bookJson = await bookRes.json();
+                        clearPendingBooking();
+                        if (bookRes.ok && bookJson.ok) {
+                            window.location.href = "/booking";
+                            return;
+                        }
+                    } catch (err) {
+                        clearPendingBooking();
+                        console.error("pending booking failed:", err);
+                        return;
+                        // 失敗的話就不跳轉了，繼續下面的重新載入頁面流程
+                    }
+                }
+
+                // default：沒有要跳轉的頁面就重新載入目前頁面
+                location.reload(); // 等於按下重新整理（localStorage 不會被清掉）
                 return;
-            }else{
+            }else{ // 沒有 token，代表登入失敗
                 setMessage(json.message, "is-error");
                 setTimeout(() => setMessage(""), 2000);
             }
         } catch (err){
-            setMessage("伺服器錯誤，請稍後再試", "is-error");
+            console.error("pending booking failed:", err);
+            setMessage(err.message || "伺服器錯誤，請稍後再試", "is-error");
             setTimeout(() => setMessage(""), 2000);
         } finally {
             if (btn) btn.disabled = false;
         }
     }
 
+    // Part 5-3: Booking Text in Navigation Bar
+    function initBookingNav() {
+        // 根據登入狀態，決定跳轉頁面或顯示 dialog
+        if (state.signedIn) {
+            window.location.href = "/booking";
+        } else {
+            setRedirect("/booking"); // 記錄使用者想去 /booking，登入成功後要跳轉過去
+            openAuthDialog();
+        }
+    }
+
+    // 登入後要跳轉頁面
+    function setRedirect(path) {
+        sessionStorage.setItem(REDIRECT_KEY, path);
+    }
+    function popRedirect() {
+        const path = sessionStorage.getItem(REDIRECT_KEY);
+        if (path) sessionStorage.removeItem(REDIRECT_KEY);
+        return path;
+    }
+    function clearRedirect() {
+        sessionStorage.removeItem(REDIRECT_KEY);
+    }
+
+    // Part 5-4: Create a Booking
+    function getPendingBooking() {
+        const raw = sessionStorage.getItem(PENDING_BOOKING_KEY);
+        if (!raw) return null;
+
+        try {
+            return JSON.parse(raw); // 因為sessionStorage只能存字串，要把字串還原回物件
+        } catch {
+            sessionStorage.removeItem(PENDING_BOOKING_KEY);
+            return null;
+        }
+    }
+
+    function clearPendingBooking(booking) {
+        sessionStorage.removeItem(PENDING_BOOKING_KEY);
+    }
+
     // ===== 事件監聽 =====
-    // 點擊 authLink 打開 dialog
+    // 點擊 authLink，根據登入狀態，決定打開 dialog 或 登出
     authLink.addEventListener("click", (e) => {
         e.preventDefault();
         
         if (state.signedIn) {
-            // 已登入狀態下，點 authLink 是「登出系統」（Part 4-6: Sign Out Procedure）
+            // 登出後狀態重置
             clearToken();
+            clearRedirect();
+
             location.reload();
         } else {
-            // 未登入狀態下，點 authLink 是「登入/註冊」
             openAuthDialog();
         }
     });
 
-    // 點擊關閉按鈕/backdrop
+    // 點擊 關閉按鈕 / backdrop
     const closeBtn = dialog.querySelector('[data-action="close"]');
     if (closeBtn) closeBtn.addEventListener("click", closeAuthDialog);
     dialog.addEventListener("click", (e) => {
@@ -205,11 +289,13 @@
             closeAuthDialog();
         }
     });
-    dialog.addEventListener("close", (e) => {
-        clearSignupTimer(); // 若使用者註冊成功立刻關掉註冊表單，又立刻再打開表單（openAuthDialog()預設是登入表單），再立刻手動點註冊表單時，因為上輪沒清 timer，時間到會又切回登入表單，造成困擾
-        
-        signinForm.reset(); // 把 <form> 裡的欄位回到「初始值」，回到預設值，若沒有預設值，就清空(不會刪掉 DOM、也不會把 JS 變數 state 一起重置) 
+    dialog.addEventListener("close", (e) => { // 除了點擊 關閉按鈕 / backdrop 會觸發關閉，按 ESC、背景關閉、或其他地方呼叫 dialog.close()也會觸發 close 事件
+        clearSignupTimer(); // 避免使用者註冊成功立刻關掉註冊表單，又立刻再打開表單，因為openAuthDialog()預設是登入表單，若他再立刻手動點註冊表單時，因為上輪沒清 timer，時間到會又切回登入表單，會造成困擾
+
+        signinForm.reset(); // 把 <form> 裡的欄位回到「初始值」：回到預設值，若沒有預設值，就清空(不會刪掉 DOM、也不會把 JS 變數 state 一起重置) 
         signupForm.reset();
+        clearRedirect(); // 如果使用者關掉 dialog，就取消跳轉流程
+        clearPendingBooking();
     });
 
     // 點擊「點此註冊、點此登入」，跳轉表單
@@ -232,6 +318,16 @@
 
     // 送出登入表單
     signinForm.addEventListener("submit", handleSigninSubmit);
+
+    // 點擊 booking link
+    const bookingLink = document.querySelector("#booking-link");
+    if (bookingLink) {
+        bookingLink.addEventListener("click", async (e) => {
+            e.preventDefault();
+            await checkSignInStatus(); // 確保最新的登入狀態，防止使用者開多個頁面，可能在另一個頁面登出，然後回到這個頁面點預定行程連結卻還是跳轉到 booking 頁面
+            initBookingNav();
+        });
+    }
 
     checkSignInStatus();
 })();

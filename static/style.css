@@ -149,7 +149,6 @@ button { font: inherit; }
   width: 100%;
   height: 100%;
   border: 0;
-  outline: none;
   padding: 15px 15px;
   font-size: 16px;
   color: #111;
@@ -425,7 +424,6 @@ button { font: inherit; }
   color: #666;
 }
 
-
 .auth-form[hidden] { display: none; }
 
 .auth-form {
@@ -510,7 +508,7 @@ button { font: inherit; }
 }
 
 /* ===== Attraction Page ===== */
-.attraction-content { margin: 40px 0}
+.page__main { padding: 40px 0 0; }
 
 .attraction-content__container {
   max-width: 1200px;
@@ -859,5 +857,232 @@ button { font: inherit; }
   .attraction-detail {
     padding: 0;
     margin: 0 0 40px;
+  }
+}
+
+/* ===== Booking Page ===== */
+/* 讓「empty state」時 footer 下方能延伸灰底 */
+body { /* 把 body 背景改成灰色。footer 下方（沒被任何元素佔到的剩下視窗高度）會顯示 body 或 html 的 background */
+  background: #757575;
+  min-height: 100vh; /* 讓 body 最小高度撐滿整個視窗高度（通常 body 的高度跟內容一樣短） */
+}
+body .page__main { /* 但 main 內容區仍維持白底 */
+  background: #fff;
+}
+
+/* container */
+.booking-page__container {
+  max-width: 1000px;
+  margin: 0 auto; /* 上下 margin 0，左右 auto → 水平置中（前提是有 max-width/width） */
+  padding: 0px 0px 40px;
+}
+
+.booking-page__headline {
+  margin: 0 0 30px;
+  font-size: 19px;
+  font-weight: 700;
+  color: #666;
+  height: 24px;
+}
+
+.booking-page__empty {
+  margin: 0; /* 取消 <p> 預設上下 margin */
+  font-size: 16px;
+  color: #666;
+}
+
+.booking-page__inner {
+  padding: 0 10px;
+}
+
+.booking-page__divider {
+  border: 0;
+  border-top: 1px solid #E8E8E8; /* 上邊框」當分隔線 */
+  margin: 40px 0; /* 上下留 40px、左右 0*/
+  width: min(1200px, calc(100vw - 30px));
+  position: relative; /* left 只有在非 static 的定位下才會生效 */
+  left: 50%; /* 把 divider 的「左邊界」往右推到父層寬度的 50% 位置 */
+  transform: translateX(-50%); /* 把 divider 再往左拉回自身寬度的 50%，讓它的中心點剛好落在父層的 50% 位置。 */
+}
+
+/* Trip card (desktop) */
+.booking-trip-card {
+  display: grid; /* 把卡片變成 CSS Grid 容器，用欄位排列（左圖、右info） */
+  grid-template-columns: 250px 1fr; /* 左欄固定 250px，右欄彈性填滿剩餘空間 */
+  column-gap: 30px;
+  align-items: start; /* Grid 內容在垂直方向對齊上方，不要置中 */
+}
+
+.booking-trip-card__info{
+  position: relative;      /* 讓裡面的 absolute （垃圾桶）以它為基準 */
+  height: 200px;
+}
+
+.booking-trip-card__image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.booking-trip-card__name {
+  display: inline-block; /* 讓 <a> 像 inline，但可以吃 margin / 寬高行為更可控 */
+  margin: 0 0 20px; /* 下方空 20px */
+  font-size: 16px;
+  font-weight: 700;
+  color: #448899;
+  height: 24px;
+}
+
+.booking-trip-card__line {
+  margin: 0 0 10px;
+  font-size: 16px;
+  color: #666;
+  height: 24px;
+}
+
+.booking-trip-card__label {
+  font-weight: 700;
+}
+
+.booking-trip-card__delete {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
+
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+
+  background: transparent;
+  background-image: url("/static/images/trash.png");
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* section */
+.booking-page__section-title {
+  margin: 0 0 20px;
+  font-size: 19px;
+  font-weight: 700;
+  color: #666;
+  height: 24px;
+}
+
+/* form rows */
+.booking-page__form-row {
+  display: flex; /* 一行內「label + input」水平排 */
+  align-items: center;
+  gap: 0;
+  margin: 0 0 15px;
+}
+
+.booking-page__label {
+  min-width: 81px;
+  font-size: 16px;
+  color: #666;
+  white-space: nowrap; /* 不換行 */
+}
+
+.booking-page__input {
+  width: 200px;
+  height: 38px;
+  padding: 10px 10px;
+  border: 1px solid #E8E8E8;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+.booking-page__hint {
+  margin: 15px 0 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #666;
+  height: 24px;
+}
+
+/* total + button */
+.booking-page__action {
+  display: flex;
+  flex-direction: column; /* 讓 total 與 button 垂直排列 */
+  align-items: flex-end; /* 整組靠右對齊 */
+  gap: 22px;
+  height: 100px;
+}
+
+.booking-page__total {
+  margin: 0; /* 取消 <p> 預設上下 margin */
+  font-size: 16px;
+  font-weight: 700;
+  color: #666;
+}
+
+.booking-page__submit {
+  width: 173px;
+  height: 36px;
+  border: 0;
+  border-radius: 5px;
+  background: #448899;
+  color: #fff;
+  font-size: 19px;
+  cursor: pointer;
+}
+.booking-page__submit:hover { filter: brightness(0.95); } /* hover 時變暗一點點（亮度乘 0.95） */
+
+/* ===== RWD：Tablet (<=1200px) ===== */
+@media (max-width: 1200px) {
+    .hero__container,
+    .booking-page__container,
+    .footer__container {
+      width: 90%;
+      margin: 0 auto;
+    }
+}
+
+/* ===== RWD：Mobile (<=700px) ===== */
+@media (max-width: 700px) {
+  .booking-page__container {
+    width: 100%;
+    padding: 0px 10px 40px;
+  }
+
+  .booking-page__inner{
+    padding: 0;
+  }
+
+  .booking-trip-card {
+    grid-template-columns: 1fr;
+    row-gap: 30px;
+    min-height: auto;
+  }
+
+  .booking-trip-card__image {
+    width: 100%;
+    height: 200px;
+  }
+
+  .booking-trip-card__delete {
+    top: auto; /* 取消 top 的定位約束  */
+    bottom: 0;
+  }
+
+  .booking-trip-card__line--address {
+    margin: 0;
+  }
+
+  .booking-page__label {
+    min-width: 80px;
+  }
+
+  .booking-page__input {
+    width: 100%;
+    max-width: 260px;
+  }
+
+  .booking-page__hint {
+    height: 48px;
   }
 }

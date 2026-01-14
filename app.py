@@ -13,7 +13,7 @@ app = FastAPI()
 
 PAGE_SIZE = 8 # 固定每頁 8 筆景點資料
 
-load_dotenv() # 找到專案資料夾裡的 .env 檔，讀取，把裡面的設定載入到系統的環境變數（environment variables）中
+load_dotenv() # 找到專案資料夾裡的 .env 檔，把裡面的設定載入到系統的環境變數中
 
 ## 資料庫連線設定
 DB_HOST = os.getenv("DB_HOST", "localhost") # 去系統的環境變數裡找 DB_HOST → 如果 .env 有設定、且 load_dotenv() 有成功執行，就會回傳 .env 裡 DB_HOST 的值。如果找不到 DB_HOST 這個環境變數，就回傳 "localhost"
@@ -68,6 +68,17 @@ def get_bearer_token(request: Request):
     if token == "": # token 空字串：當作未登入
         return None
     return token
+
+# 從 request 讀取並驗證 token，回傳 payload（或 None）
+def get_current_user(request: Request):
+	token = get_bearer_token(request)
+	if not token:
+		return None
+	try:
+		payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG]) # decode 時要用list / iterable的型別，代表允許哪些演算法的 token 被接受
+		return payload
+	except: # token 是壞掉的字串、簽章不對（secret 不匹配 / 被竄改）、token 過期、algorithms 不符合、程式自己的 bug（JWT_SECRET 沒定義、JWT_ALG 打錯字）
+		return None
 
 ## 路由
 # 註冊一個新的會員
@@ -159,25 +170,20 @@ async def signin(body: dict = Body(...)):
 		if con is not None:
 			con.close()
 	
-
 # 取得當前登入的會員資訊
 @app.get("/api/user/auth")
 def get_user(request: Request): # 用 request 拿 Authorization header
-	token = get_bearer_token(request)
-	if not token: # 沒 token 表示沒登入
+	payload = get_current_user(request)
+	if not payload: # 沒 token / token 無效、過期 / 驗章失敗
 		return {"data": None} 
 	
-	try: # 解碼 token
-		payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG]) # decode 時要用list / iterable的型別，代表允許哪些演算法的 token 被接受
-		return {
-			"data": {
-				"id": payload["id"],
-                "name": payload["name"],
-                "email": payload["email"],
-			}
+	return {
+		"data": {
+			"id": payload["id"],
+			"name": payload["name"],
+			"email": payload["email"],
 		}
-	except: # token 無效 / 過期 / 驗章失敗
-		return {"data": None}
+	}
 
 # 取得景點資料列表
 @app.get("/api/attractions")
@@ -406,6 +412,141 @@ async def get_mrts():
 
 		
 	except mysql.connector.Error as e:
+		if con:
+			con.rollback()
+		return JSONResponse(status_code=500, content={"error": True, "message": str(e)})
+	
+	finally:
+		if cursor:
+			cursor.close()
+		if con:
+			con.close()
+
+# 取得尚未下單的預定行程
+@app.get("/api/booking")
+async def get_booking(request: Request):
+	user_id = get_current_user(request).get("id")
+	if not user_id:
+		return JSONResponse(status_code=403, content={"error": True, "message": "未登入系統，拒絕存取"})
+
+	con = None
+	cursor = None
+	try:
+		con = get_connection()
+		cursor = con.cursor(dictionary=True)
+
+		cursor.execute(
+			"SELECT attraction_id, date, time, price FROM bookings WHERE user_id=%s", (user_id,)
+		)
+		booking = cursor.fetchone()
+		if not booking: # null 表示沒有資料
+			return {"data": None}
+		
+		attraction_id = booking["attraction_id"]
+		cursor.execute(
+			"SELECT id, name, address FROM attractions WHERE id=%s", (attraction_id,)
+		)
+		info = cursor.fetchone()
+		if not info: # 正常不該發生，因為 booking 裡的 attraction_id 有設 foreign key constraints（FOREIGN KEY (attraction_id) REFERENCES attractions(id) ON DELETE CASCADE），不可能 INSERT/UPDATE 不存在的景點；就算景點被刪除，也不會留下該筆 booking
+			return JSONResponse(status_code=500, content={"error": True, "message": "預定行程的景點不存在"})
+		
+		cursor.execute(
+			"SELECT url FROM images WHERE attraction_id=%s LIMIT 1", (attraction_id,)
+		)
+		img = cursor.fetchone()
+		img_url = img["url"] if img else ""
+	
+		return {
+			"data": {
+				"attraction": {
+					"id": info["id"],
+					"name": info["name"],
+					"address": info["address"],
+					"image": img_url
+				},
+				"date": booking["date"], # 用 JSONResponse(status_code=200, content=...)時，要加.isoformat() 把 datetime.date 物件轉成字串
+				"time": booking["time"],
+				"price": booking["price"]
+			}
+		}
+	
+	except Exception as e:
+		if con:
+			con.rollback()
+		return JSONResponse(status_code=500, content={"error": True, "message": str(e)})
+	
+	finally:
+		if cursor:
+			cursor.close()
+		if con:
+			con.close()
+	
+# 建立新的預定行程
+@app.post("/api/booking")
+async def create_booking(request: Request, body: dict = Body(...)):
+	user_id = get_current_user(request).get("id")
+	if not user_id:
+		return JSONResponse(status_code=403, content={"error": True, "message": "未登入系統，拒絕存取"})
+	
+	# 進 DB 前做基本驗證
+	attraction_id = body.get("attractionId")
+	date = body.get("date")
+	time = body.get("time")
+	price = body.get("price")
+	try:
+		attraction_id = int(attraction_id)
+		price = int(price)
+	except: # int()失敗的情形，如傳入 None（TypeError：傳 Null、缺欄位） / 空字串、空白字串（ValueError） / 非數字字串（ValueError）） / 浮點數字串（ValueError）/ 其他型別（TypeError：像[]）
+		return JSONResponse(status_code=400, content={"error": True, "message": "建立失敗，輸入不正確或其他原因"})
+	if not date or time not in ["morning", "afternoon"]: # date 不能是空的或 None（因為date DATE NOT NULL）；time 只能是 morning / afternoon
+		return JSONResponse(status_code=400, content={"error": True, "message": "建立失敗，輸入不正確或其他原因"})
+	
+	con = None
+	cursor = None
+	try:
+		con = get_connection()
+		cursor = con.cursor(dictionary=True)
+		sql = """
+			INSERT INTO bookings(user_id, attraction_id, date, time, price)
+			VALUES(%s, %s, %s, %s, %s)
+			ON DUPLICATE KEY UPDATE
+				attraction_id = VALUES(attraction_id),
+				date = VALUES(date),
+				time = VALUES(time),
+				price = VALUES(price)
+		"""  # 「ON DUPLICATE KEY UPDATE」當插入的資料違反 UNIQUE KEY 或 PRIMARY KEY 的 constraints 時，就改成 UPDATE（覆蓋）
+		cursor.execute(sql, (user_id, attraction_id, date, time, price))
+		con.commit()
+		return {"ok": True}
+	
+	except Exception as e:
+		if con:
+			con.rollback()
+		return JSONResponse(status_code=500, content={"error": True, "message": str(e)})
+	
+	finally:
+		if cursor:
+			cursor.close()
+		if con:
+			con.close()
+
+# 刪除目前的預定行程
+@app.delete("/api/booking")
+async def delete_booking(request: Request):
+	user_id = get_current_user(request).get("id")
+	if not user_id:
+		return JSONResponse(status_code=403, content={"error": True, "message": "未登入系統，拒絕存取"})
+	
+	con = None
+	cursor = None
+	try:
+		con = get_connection()
+		cursor = con.cursor()
+		cursor.execute("DELETE FROM bookings WHERE user_id=%s", (user_id,))
+		con.commit()
+		return {"ok": True}
+	
+	except Exception as e:
 		if con:
 			con.rollback()
 		return JSONResponse(status_code=500, content={"error": True, "message": str(e)})

@@ -9,7 +9,11 @@
   const transportEl = document.querySelector("#attraction-transport");
   const imgEl = document.querySelector("#carousel-image");
   const indicatorEl = document.querySelector(".carousel__indicator");
+
   let images = [];
+  const TOKEN_KEY = "TOKEN";
+  const state = { signedIn: false };
+  const PENDING_BOOKING_KEY = "PENDING_BOOKING";
 
   // 從網址抓 id ：不建議經過 index 的 click 事件把 id 存在 cookie/localStorage/變數，因為直接貼連結、在景點頁按重新整理、或從 Google 搜尋進來等情況，都不會經過 index 的 click 事件，而且cookie / localStorage 是「全站共享」，同時開很多不同 id 的 tab 會互相污染
   function getAttractionIdFromPath() {
@@ -139,7 +143,74 @@
     setActiveSegment(currentIndex);
   }
 
+  // Part 5-4: Create a Booking
+  function bindCreateBooking() {
+    const bookingForm = document.querySelector(".booking-card__form");
+    if (!bookingForm) return;
+    bookingForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const dateInput = bookingForm.querySelector('#booking-date');
+      const date = dateInput ? dateInput.value : null;
+      const time = getCheckedTime();
+      const price = TIME_PRICE[time];
+
+      const bookingData = {
+        attractionId: attractionId,
+        date: date,
+        time: time,
+        price: price,
+      }; 
+      
+      const btn = bookingForm.querySelector('.booking-card__submit');
+      if (btn) btn.disabled = true;
+
+      const token = localStorage.getItem(TOKEN_KEY);
+      try {
+        // 未登入：先存 pending，再打開登入 dialog
+        if (!token) {
+          sessionStorage.setItem(PENDING_BOOKING_KEY, JSON.stringify(bookingData)); // sessionStorage 只能存字串
+          window.AuthDialog.open();
+          return;
+        }
+
+        // 已登入：直接建立預定
+        const res = await fetch("/api/booking", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify(bookingData),
+        });
+
+        const json = await res.json();
+
+        if (res.ok && json.ok) {
+          window.location.href = "/booking";
+          return;
+        } 
+
+        if (res.status === 403) { // Token 過期/無效：當作未登入處理
+          localStorage.removeItem(TOKEN_KEY);
+          sessionStorage.setItem(PENDING_BOOKING_KEY, JSON.stringify(bookingData));
+          window.AuthDialog.open();
+          return;
+        }
+        
+        alert(json.message);
+      } catch (err) {
+        console.error(err);
+        alert("伺服器錯誤，請稍後再試");
+        return;
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    });
+  }
+
   bindTimeSelection();
   bindSlideshow();
+  bindCreateBooking();
   init();
 })();

@@ -15,14 +15,14 @@
       <a class="header__logo" href="/">台北一日遊</a>
 
       <nav class="header__nav">
-        <a class="header__nav-link" href="/booking">預定行程</a>
+        <a class="header__nav-link" href="/booking" id="booking-link">預定行程</a>
         <a class="header__nav-link" href="#" id="auth-link"></a>
       </nav>
     </div>
   </header>
-
-  <main class="page__main">
+  
   <!-- 2) Main Content -->
+  <main class="page__main">
     <section class="attraction-content">
       <div class="attraction-content__container">
       
@@ -129,7 +129,7 @@
     </form>
 
     <!-- Sign Up -->
-    <form class="auth-form" id="signup-form">
+    <form class="auth-form" id="signup-form" hidden>
       <input class="auth-form__input" name="name" type="text" placeholder="輸入姓名" required />
       <input class="auth-form__input" name="email" type="email" placeholder="輸入電子郵件" required />
       <input class="auth-form__input" name="password" type="password" placeholder="輸入密碼" required />
