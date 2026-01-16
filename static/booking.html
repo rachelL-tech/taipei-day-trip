@@ -7,6 +7,9 @@
   <script src="/static/auth.js" defer></script>
   <script src="/static/booking.js" defer></script>
   <script src="https://js.tappaysdk.com/sdk/tpdirect/v5.19.2"></script>
+  <script>
+    TPDirect.setupSDK(APP_ID, 'APP_KEY', 'sandbox')
+  </script>
   <title>台北一日遊</title>
 </head>
 <body class="page">
@@ -35,7 +38,7 @@
       </p>
 
       <!-- 有資料狀態 -->
-      <div id="booking-content" class="booking-page__inner" hidden>
+      <div id="booking-content" class="booking-page__inner">
         <!-- 景點資訊 -->
         <section>
           <div class="booking-trip-card">

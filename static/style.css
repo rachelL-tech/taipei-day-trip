@@ -980,7 +980,6 @@ body .page__main { /* 但 main 內容區仍維持白底 */
   border: 1px solid #E8E8E8;
   border-radius: 5px;
   background: #fff;
-  font-size: 16px;
 }
 
 /* TapPay 會在 focus 時幫容器自動加上這個 class */

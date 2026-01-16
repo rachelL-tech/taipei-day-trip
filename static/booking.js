@@ -1,7 +1,7 @@
 (() => {
   // Part 5-5: Complete Booking Page
   const TOKEN_KEY = "TOKEN";
-
+  
   // 確保只在 /booking 頁執行
   const userNameEl = document.querySelector("#booking-user-name");
   if (!userNameEl) return;
@@ -21,6 +21,8 @@
 
   const contactNameEl = document.querySelector("#contact-name");
   const contactEmailEl = document.querySelector("#contact-email");
+
+  let currentBooking = null; // 存 booking 資料，之後按付款會用到
 
   function getToken() {
     return localStorage.getItem(TOKEN_KEY);
@@ -172,9 +174,14 @@
         return;
       }
 
+      currentBooking = booking;
+
       renderBooking(booking);
       showContent();
       bindDelete(token);
+
+      initTapPayFields();
+      bindSubmit();
     } catch (err) {
       console.error(err);
       alert("載入失敗，請稍後再試");
@@ -182,5 +189,152 @@
     }
   }
 
+  // Part 6-2: Front-End Process for Credit Card Payment
+  // ===== TapPay (Sandbox) =====
+  const TAPPAY_APP_ID = 166541;
+  const TAPPAY_APP_KEY = "app_6PsSrnZWiKb7BO4xA9EMuiJIXdjcCM3748x4aCJCtRm9YAKdJrdjWS6oJUWv"; 
+  const TAPPAY_ENV = "sandbox";
+  let tappayInited = false;
+
+  const contactPhoneEl = document.querySelector("#contact-phone");
+  const submitBtn = document.querySelector("#booking-submit-btn");
+
+  // TapPay 初始化（setupSDK）
+  function initTapPayFields() {
+    if (tappayInited) return; // 只初始化一次，防止同一個容器被重複插入iframe，以及綁多次事件監聽（綁幾次回呼幾次，可能造成卡頓或按鈕 disabled/enable 邏輯怪）
+
+    // 確認 TapPay SDK 有載入成功。 TPDirect 是 TapPay SDK 在瀏覽器上掛的全域物件（script 載入後才會出現）
+    if (!window.TPDirect) { // script CDN 被擋、或 HTML 沒有引入等
+      console.error("TPDirect not loaded");
+      return;
+    }
+
+    TPDirect.setupSDK(TAPPAY_APP_ID, TAPPAY_APP_KEY, TAPPAY_ENV); // 把 APP_ID / APP_KEY 和環境（sandbox 或 production）交給 TapPay
+
+    // 把 iframe 欄位掛進 DOM
+    TPDirect.card.setup({
+      fields: { // 告訴 TapPay 要放哪些欄位，以及要放在哪個 DOM 位置
+        number: {
+          element: "#card-number", // 把卡號 iframe 插到 id 為 card-number 的元素裡
+          placeholder: "**** **** **** ****",
+        },
+        expirationDate: {
+          element: "#card-expiration-date", // 把到期日 iframe 插到 id 為 card-expiration-date 的元素裡
+          placeholder: "MM / YY",
+        },
+        ccv: {
+          element: "#card-ccv", // 把安全碼 iframe 插到 id 為 card-ccv 的元素裡
+          placeholder: "CCV",
+        },
+      },
+      styles: { // 設定 iframe 內 input 的字型、顏色等
+        input: {
+          color: "#000",
+          "font-size": "16px",
+          "font-family": "Noto Sans TC, system-ui, -apple-system, Segoe UI, Roboto, PingFang TC, Microsoft JhengHei, Arial, sans-serif",
+        },
+        ".invalid": { // 欄位狀態不合法時
+          color: "#c43131",
+        },
+      },
+    });
+
+    // 預設先禁用，等 canGetPrime = true 才開
+    if (submitBtn) submitBtn.disabled = true;
+
+    // 事件監聽：欄位狀態更新事件 → 透過 TPDirect.ccv.onUpdate() 去監測目前輸入狀況，會在任何欄位有狀態變動（點進卡號欄位（focus）、卡號輸入或刪掉數字等）時，內部計算/整理狀態物件，再呼叫 callback 並提供狀態物件當參數（update）。// update = { canGetPrime: true, hasError: false, status: { name_en: 0, email: 0, phone_number: 0, phone_country_code: 0}}
+    TPDirect.card.onUpdate((update) => {
+      if (!submitBtn) return;
+
+      submitBtn.disabled = !update.canGetPrime; // update.canGetPrime 是布林值。true：全部欄位皆為正確，可以呼叫 getPrime 了 → 按鈕 disabled=false to get prime ；false：格式不完整/不合法 → 按鈕 disabled=true
+    });
+
+    tappayInited = true; // 標記已初始化完成
+  }
+
+    // get TapPay Prime and send it with other necessary data to the back-end
+    function getPrimeOnSubmit(){
+      // 得到 TapPay Fields 卡片資訊的輸入狀態
+      const tappayStatus = TPDirect.card.getTappayFieldsStatus();
+      if (!tappayStatus.canGetPrime) {
+        alert("信用卡資訊未填完整或格式錯誤");
+        return;
+      }
+      
+      TPDirect.card.getPrime((result) => {
+        if (result.status !== 0){
+          alert("get prime failed " + result.msg);
+          return;
+        }
+        return result.card.prime;
+      });
+    }
+
+    function bindSubmit(){
+      if (!submitBtn) return;
+
+      submitBtn.addEventListener("click", async () => {
+        if (!currentBooking) {
+          alert("目前沒有待預訂的行程");
+          return;
+        }
+        
+        submitBtn.disabled = true;
+
+        const contact = {
+          name: contactNameEl.value.trim() || "",
+          email: contactEmailEl.value.trim() || "",
+          phone: contactPhoneEl.value.trim() || "",
+        }
+
+        if (!contact.name || !contact.email || !contact.phone){
+          alert("請完整填寫聯絡資訊")
+          return;
+        }
+        
+        // get TapPay Prime and send it with other necessary data to the back-end
+        try {
+          const prime = getPrimeOnSubmit();
+          const res = await fetch("/api/orders", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  "prime": prime,
+                  "order": {
+                    "price": currentBooking.price,
+                    "trip": {
+                      "attraction": {
+                        "id": currentBooking.attraction["id"],
+                        "name": currentBooking.attraction["name"],
+                        "address": currentBooking.attraction["address"],
+                        "image": currentBooking.attraction["image"]
+                      }
+                    },
+                    "date": currentBooking.date,
+                    "time": currentBooking.time,
+                  },
+                  "contact": {
+                    "name": contactNameEl.value.trim(),
+                    "email": contactEmailEl.value.trim(), 
+                    "phone": contactPhoneEl.value,
+                  }
+                })
+              });
+          const json = await res.json();
+        } catch (err) {
+            alert(err.message || "取得 prime 失敗")
+        } finally {
+          // 把按鈕狀態交回「目前 TapPay 欄位狀態」決定
+          try {
+            const s = TPDirect.card.getTappayFieldsStatus();
+            submitBtn.disabled = !s.canGetPrime;
+          } catch {
+            submitBtn.disabled = false;
+          }
+        }
+      });
+    }
+
   init();
+
 })();
