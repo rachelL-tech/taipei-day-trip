@@ -1,11 +1,142 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Thank You</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/auth.js" defer></script>
+  <script src="/static/attraction.js" defer></script>
+  <title>台北一日遊</title>
 </head>
-<body>
+<body class="page">
+  <!-- 1) Sticky（固定） Header -->
+  <header class="header header--sticky">
+    <div class="header__container">
+      <a class="header__logo" href="/">台北一日遊</a>
+
+      <nav class="header__nav">
+        <a class="header__nav-link" href="/booking" id="booking-link">預定行程</a>
+        <a class="header__nav-link" href="#" id="auth-link"></a>
+      </nav>
+    </div>
+  </header>
   
+  <!-- 2) Main Content -->
+  <main class="page__main">
+    <section class="attraction-content">
+      <div class="attraction-content__container">
+      
+        <!-- gallery + info (上半部)  -->
+        <section class="attraction-hero">
+          <div class="attraction-hero__gallery">
+            <!-- 輪播容器 -->
+            <div class="carousel">
+              <img class="carousel__image" id="carousel-image" src="" alt="" />
+              <button class="carousel__btn carousel__btn--left" type="button"></button>
+              <button class="carousel__btn carousel__btn--right" type="button"></button>
+              <div class="carousel__indicator">
+                <!-- 之後依圖片數量 JS 動態塞入 N 個 span -->
+              </div>
+            </div>
+          </div>
+
+          <div class="attraction-hero__info">
+            <h3 class="attraction-hero__title" id="attraction-name"></h3>
+            <p class="attraction-hero__subtitle" id="attraction-category-mrt"></p>
+
+            <div class="booking-card">
+              <div class="booking-card__title">訂購導覽行程</div>
+              <div class="booking-card__desc">以此景點為中心的一日行程，帶您探索城市角落故事</div>
+
+              <form class="booking-card__form">
+                <!-- 日期 -->
+                <div class="booking-card__row booking-card__row--date">
+                  <label class="booking-card__label" for="booking-date">選擇日期：</label>
+                  <input
+                    class="booking-card__input booking-card__input--date"
+                    id="booking-date"
+                    name="date"
+                    type="date"
+                    required
+                  />
+                </div>
+                <!-- 時間 -->
+                <div class="booking-card__row">
+                  <span class="booking-card__label">選擇時間：</span>
+                  <div class="booking-card__time">
+                    <label class="booking-card__radio">
+                      <input type="radio" name="time" value="morning" checked />
+                      <span class="booking-card__radio-text">上半天</span>
+                    </label>
+                    <label class="booking-card__radio">
+                      <input type="radio" name="time" value="afternoon" />
+                      <span class="booking-card__radio-text">下半天</span>
+                    </label>
+                  </div>
+                </div>
+                <!-- 費用 -->
+                <div class="booking-card__row">
+                  <span class="booking-card__label">導覽費用：</span>
+                  <span class="booking-card__price"></span>
+                </div>
+                <!-- 按鈕 -->
+                <button class="booking-card__submit" type="submit">開始預約行程</button>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <div class="attraction-divider"></div>
+
+        <!-- detail (下半部)  -->
+        <section class="attraction-detail">
+          <p class="attraction-detail__description" id="attraction-description"></p>
+
+          <p class="attraction-detail__heading">景點地址：</p>
+          <p class="attraction-detail__text" id="attraction-address"></p>
+
+          <p class="attraction-detail__heading">交通方式：</p>
+          <p class="attraction-detail__text" id="attraction-transport"></p>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <!-- 4) Footer -->
+  <footer class="footer">
+    <div class="footer__container">
+      <small class="footer__text">COPYRIGHT © 2021 台北一日遊</small>
+    </div>
+  </footer>
+
+    <!-- Auth Modal -->
+  <dialog class="auth-dialog" id="auth-dialog">
+    <div class="auth-dialog__bar"></div>
+
+    <button class="auth-dialog__close" type="button" data-action="close">
+      <div class="auth-dialog__close-icon"></div>
+    </button>
+
+    <h3 class="auth-dialog__title" id="auth-title">登入會員帳號</h3>
+
+    <!-- Sign In -->
+    <form class="auth-form" id="signin-form">
+      <input class="auth-form__input" name="email" type="email" placeholder="輸入電子信箱" required />
+      <input class="auth-form__input" name="password" type="password" placeholder="輸入密碼" required />
+      <button class="auth-form__submit" type="submit">登入帳戶</button>
+      <p class="auth-form__message"></p>
+      <p class="auth-form__switch">還沒有帳戶？<a href="#" data-action="to-signup">點此註冊</a></p>
+    </form>
+
+    <!-- Sign Up -->
+    <form class="auth-form" id="signup-form" hidden>
+      <input class="auth-form__input" name="name" type="text" placeholder="輸入姓名" required />
+      <input class="auth-form__input" name="email" type="email" placeholder="輸入電子郵件" required />
+      <input class="auth-form__input" name="password" type="password" placeholder="輸入密碼" required />
+      <button class="auth-form__submit" type="submit">註冊新帳戶</button>
+      <p class="auth-form__message"></p>
+      <p class="auth-form__switch">已經有帳戶了？<a href="#" data-action="to-signin">點此登入</a></p>
+    </form>
+  </dialog>
 </body>
 </html>
