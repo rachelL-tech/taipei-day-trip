@@ -705,8 +705,9 @@ async def create_order(request: Request, body: dict = Body(...)):
 		if con:
 			con.close()
 
-
 # 根據訂單編號取得訂單資訊
+@app.get("/api/order/{orderNumber}")
+# async def
 
 # Static Pages (Never Modify Code in this Block)
 @app.get("/", include_in_schema=False) # include_in_schema=False 會把這個路由從 API 文件中隱藏

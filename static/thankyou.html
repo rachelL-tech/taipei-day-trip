@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/static/style.css">
   <script src="/static/auth.js" defer></script>
-  <script src="/static/attraction.js" defer></script>
+  <script src="/static/thankyou.js" defer></script>
+  <script src="https://js.tappaysdk.com/sdk/tpdirect/v5.19.2"></script>
   <title>台北一日遊</title>
 </head>
 <body class="page">
@@ -20,87 +21,85 @@
       </nav>
     </div>
   </header>
-  
+
   <!-- 2) Main Content -->
   <main class="page__main">
-    <section class="attraction-content">
-      <div class="attraction-content__container">
-      
-        <!-- gallery + info (上半部)  -->
-        <section class="attraction-hero">
-          <div class="attraction-hero__gallery">
-            <!-- 輪播容器 -->
-            <div class="carousel">
-              <img class="carousel__image" id="carousel-image" src="" alt="" />
-              <button class="carousel__btn carousel__btn--left" type="button"></button>
-              <button class="carousel__btn carousel__btn--right" type="button"></button>
-              <div class="carousel__indicator">
-                <!-- 之後依圖片數量 JS 動態塞入 N 個 span -->
-              </div>
-            </div>
-          </div>
+    <div class="booking-page__container">
+      <h2 class="booking-page__headline">
+        您好，<span id="booking-user-name"></span>，付款結果如下：
+      </h2>
 
-          <div class="attraction-hero__info">
-            <h3 class="attraction-hero__title" id="attraction-name"></h3>
-            <p class="attraction-hero__subtitle" id="attraction-category-mrt"></p>
+      <!-- 訂單失敗時-->
+      <div id="payment-content--failed">
+        <p class="thankyou__desc" id="thankyou-message">
+          付款失敗，訂單編號如下：
+        </p>
 
-            <div class="booking-card">
-              <div class="booking-card__title">訂購導覽行程</div>
-              <div class="booking-card__desc">以此景點為中心的一日行程，帶您探索城市角落故事</div>
+        <p class="thankyou__number">
+          <span>訂單編號：</span>
+          <span id="thankyou-order-number">—</span>
+        </p>
 
-              <form class="booking-card__form">
-                <!-- 日期 -->
-                <div class="booking-card__row booking-card__row--date">
-                  <label class="booking-card__label" for="booking-date">選擇日期：</label>
-                  <input
-                    class="booking-card__input booking-card__input--date"
-                    id="booking-date"
-                    name="date"
-                    type="date"
-                    required
-                  />
-                </div>
-                <!-- 時間 -->
-                <div class="booking-card__row">
-                  <span class="booking-card__label">選擇時間：</span>
-                  <div class="booking-card__time">
-                    <label class="booking-card__radio">
-                      <input type="radio" name="time" value="morning" checked />
-                      <span class="booking-card__radio-text">上半天</span>
-                    </label>
-                    <label class="booking-card__radio">
-                      <input type="radio" name="time" value="afternoon" />
-                      <span class="booking-card__radio-text">下半天</span>
-                    </label>
-                  </div>
-                </div>
-                <!-- 費用 -->
-                <div class="booking-card__row">
-                  <span class="booking-card__label">導覽費用：</span>
-                  <span class="booking-card__price"></span>
-                </div>
-                <!-- 按鈕 -->
-                <button class="booking-card__submit" type="submit">開始預約行程</button>
-              </form>
-            </div>
-          </div>
-        </section>
-
-        <div class="attraction-divider"></div>
-
-        <!-- detail (下半部)  -->
-        <section class="attraction-detail">
-          <p class="attraction-detail__description" id="attraction-description"></p>
-
-          <p class="attraction-detail__heading">景點地址：</p>
-          <p class="attraction-detail__text" id="attraction-address"></p>
-
-          <p class="attraction-detail__heading">交通方式：</p>
-          <p class="attraction-detail__text" id="attraction-transport"></p>
-        </section>
+        <div class="thankyou__actions">
+          <button class="btn" type="button">重新付款</a>
+          <a class="btn" href="/">回到首頁</a>
+        </div>
       </div>
-    </section>
-  </main>
+
+      <!-- 訂單成功時 -->
+      <div id="payment-content--success">
+        <p class="thankyou__desc" id="thankyou-message">
+          付款成功，感謝您的訂購！訂單編號如下：
+        </p>
+
+        <p class="thankyou__number">
+          <span>訂單編號：</span>
+          <span id="thankyou-order-number">—</span>
+        </p>
+
+        <!-- 景點資訊 -->
+        <section>
+          <div class="booking-trip-card">
+            <img
+              class="booking-trip-card__image"
+              id="booking-image"
+              src="https://www.travel.taipei/d_upload_ttn/sceneadmin/pic/11002568.jpg"
+              alt="預定景點圖片"
+            />
+
+            <div class="booking-trip-card__info">
+              <a class="booking-trip-card__name" href="/attraction/10">
+                台北一日遊：<span id="booking-attraction-name">平安鐘</span>
+              </a>
+
+              <p class="booking-trip-card__line">
+                <span class="booking-trip-card__label">日期：</span>
+                <span id="booking-date">2021-04-23</span>
+              </p>
+
+              <p class="booking-trip-card__line">
+                <span class="booking-trip-card__label">時間：</span>
+                <span id="booking-time">早上 9 點到下午 4 點</span>
+              </p>
+
+              <p class="booking-trip-card__line">
+                <span class="booking-trip-card__label">費用：</span>
+                <span id="booking-price">新台幣 2000 元</span>
+              </p>
+
+              <p class="booking-trip-card__line booking-trip-card__line--address">
+                <span class="booking-trip-card__label">地點：</span>
+                <span id="booking-address">台北市 大安區忠孝東路4段</span>
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <div class="thankyou__actions">
+          <a class="btn" href="/">回到首頁</a>
+        </div>
+      </div>
+        
 
   <!-- 4) Footer -->
   <footer class="footer">
