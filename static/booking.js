@@ -181,7 +181,7 @@
       bindDelete(token);
 
       initTapPayFields();
-      bindSubmit();
+      bindSubmit(token);
     } catch (err) {
       console.error(err);
       alert("載入失敗，請稍後再試");
@@ -253,74 +253,69 @@
   }
 
     // get TapPay Prime and send it with other necessary data to the back-end
-    function getPrimeOnSubmit(){
-      // 得到 TapPay Fields 卡片資訊的輸入狀態
+    function onSubmit(token, contact){
+      // 得到 TapPay Fields 卡片資訊的輸入狀態：做格式的即時驗證，避免明顯錯誤（提升 UX）
       const tappayStatus = TPDirect.card.getTappayFieldsStatus();
       if (!tappayStatus.canGetPrime) {
         alert("信用卡資訊未填完整或格式錯誤");
         return;
       }
       
-      TPDirect.card.getPrime((result) => {
+      TPDirect.card.getPrime(async (result) => {
         if (result.status !== 0){
           alert("get prime failed " + result.msg);
           return;
         }
-        return result.card.prime;
-      });
-    }
 
-    function bindSubmit(){
-      if (!submitBtn) return;
+        const prime = result.card.prime; // result.status == 0 代表 TapPay 已經拿到了這次付款所需的卡資料，並把它封裝成一個一次性、短時間有效的 token（這裡的 prime ）＝允許這次交易」的憑證；你可以拿這個 token 讓後端去請 TapPay 幫你扣款
 
-      submitBtn.addEventListener("click", async () => {
-        if (!currentBooking) {
-          alert("目前沒有待預訂的行程");
-          return;
-        }
-        
-        submitBtn.disabled = true;
-
-        const contact = {
-          name: contactNameEl.value.trim() || "",
-          email: contactEmailEl.value.trim() || "",
-          phone: contactPhoneEl.value.trim() || "",
-        }
-
-        if (!contact.name || !contact.email || !contact.phone){
-          alert("請完整填寫聯絡資訊")
-          return;
-        }
-        
-        // get TapPay Prime and send it with other necessary data to the back-end
         try {
-          const prime = getPrimeOnSubmit();
           const res = await fetch("/api/orders", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  "prime": prime,
-                  "order": {
-                    "price": currentBooking.price,
-                    "trip": {
-                      "attraction": {
-                        "id": currentBooking.attraction["id"],
-                        "name": currentBooking.attraction["name"],
-                        "address": currentBooking.attraction["address"],
-                        "image": currentBooking.attraction["image"]
-                      }
-                    },
-                    "date": currentBooking.date,
-                    "time": currentBooking.time,
-                  },
-                  "contact": {
-                    "name": contactNameEl.value.trim(),
-                    "email": contactEmailEl.value.trim(), 
-                    "phone": contactPhoneEl.value,
+            method: "POST",
+            headers: { 
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`, 
+            },
+            body: JSON.stringify({
+              prime,
+              "order": {
+                "price": currentBooking.price,
+                "trip": {
+                  "attraction": {
+                    "id": currentBooking.attraction.id,
+                    "name": currentBooking.attraction.name,
+                    "address": currentBooking.attraction.address,
+                    "image": currentBooking.attraction.image
                   }
-                })
-              });
+                },
+                "date": currentBooking.date,
+                "time": currentBooking.time,
+              },
+              contact
+            })
+          });
+          
+          // Part 6-4：After Order and Payment are Completed
+          if (res.status === 403){
+            clearToken();
+            window.location.href = "/";
+            return;
+          }
+          
           const json = await res.json();
+
+          if (json.error) {
+            alert(json.message || "訂單建立失敗");
+            return;
+          }
+
+          const order_number = json.data.number;
+          if (!order_number) {
+            alert("訂單建立完成，但未取得訂單編號");
+            return;
+          }
+
+          window.location.href = `thankyou?number=${encodeURIComponent(order_number)}`;
         } catch (err) {
             alert(err.message || "取得 prime 失敗")
         } finally {
@@ -332,6 +327,32 @@
             submitBtn.disabled = false;
           }
         }
+      });
+    }
+
+    function bindSubmit(token){
+      if (!submitBtn) return;
+
+      submitBtn.addEventListener("click", async () => {
+        if (!currentBooking) {
+          alert("目前沒有待預訂的行程");
+          return;
+        }
+
+        const contact = {
+          name: contactNameEl.value.trim() || "",
+          email: contactEmailEl.value.trim() || "",
+          phone: contactPhoneEl.value.trim() || "",
+        }
+
+        if (!contact.name || !contact.email || !contact.phone){
+          alert("請完整填寫聯絡資訊")
+          return;
+        }
+
+        submitBtn.disabled = true;
+        
+        onSubmit(token, contact);
       });
     }
 
