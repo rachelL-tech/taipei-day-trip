@@ -783,7 +783,7 @@ async def get_order(orderNumber: str, request: Request):
 						"id": row["attraction_id"],
 						"name": row["attraction_name"],
 						"address": row["attraction_address"],
-						"image": row.get("attraction_image") or ""
+						"image": row["attraction_image"] or ""
 					},
 					"date": date_val,
 					"time": row["time"]

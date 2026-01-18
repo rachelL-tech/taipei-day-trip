@@ -1093,3 +1093,12 @@ body .page__main { /* 但 main 內容區仍維持白底 */
     height: 48px;
   }
 }
+
+/* ===== Thankyou Page ===== */
+.payment-content--failed{
+
+}
+
+.btn {
+
+}
