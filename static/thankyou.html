@@ -6,7 +6,6 @@
   <link rel="stylesheet" href="/static/style.css">
   <script src="/static/auth.js" defer></script>
   <script src="/static/thankyou.js" defer></script>
-  <script src="https://js.tappaysdk.com/sdk/tpdirect/v5.19.2"></script>
   <title>台北一日遊</title>
 </head>
 <body class="page">
@@ -29,76 +28,78 @@
         您好，<span id="booking-user-name"></span>，付款結果如下：
       </h2>
 
-      <!-- 訂單失敗時-->
-      <div id="payment-content--failed">
-        <p class="thankyou__desc" id="thankyou-message">
-          付款失敗，訂單編號如下：
-        </p>
+      <div id="payment-content">
+        <!-- 付款失敗時 -->
+        <div id="payment-content--failed" hidden>
+          <p class="thankyou__desc">
+            付款失敗，訂單編號如下：
+          </p>
 
-        <p class="thankyou__number">
-          <span>訂單編號：</span>
-          <span id="thankyou-order-number">—</span>
-        </p>
+          <p class="thankyou__number">
+            <span>訂單編號：</span>
+            <span data-order-number>—</span>
+          </p>
 
-        <div class="thankyou__actions">
-          <button class="btn" type="button">重新付款</a>
-          <a class="btn" href="/">回到首頁</a>
+          <a href="/booking">回到預訂頁面重試</a>
+          <a href="/">回到首頁</a>
         </div>
-      </div>
 
-      <!-- 訂單成功時 -->
-      <div id="payment-content--success">
-        <p class="thankyou__desc" id="thankyou-message">
-          付款成功，感謝您的訂購！訂單編號如下：
-        </p>
+        <!-- 付款成功時 -->
+        <div id="payment-content--success" hidden>
+          <p class="thankyou__desc">
+            付款成功，感謝您的訂購！訂單編號如下：
+          </p>
 
-        <p class="thankyou__number">
-          <span>訂單編號：</span>
-          <span id="thankyou-order-number">—</span>
-        </p>
+          <p class="thankyou__number">
+            <span>訂單編號：</span>
+            <span data-order-number>—</span>
+          </p>
 
-        <!-- 景點資訊 -->
-        <section>
-          <div class="booking-trip-card">
-            <img
-              class="booking-trip-card__image"
-              id="booking-image"
-              src="https://www.travel.taipei/d_upload_ttn/sceneadmin/pic/11002568.jpg"
-              alt="預定景點圖片"
-            />
+          <!-- 景點資訊 -->
+          <section>
+            <div class="booking-trip-card">
+              <img
+                class="booking-trip-card__image"
+                id="booking-image"
+                src="https://www.travel.taipei/d_upload_ttn/sceneadmin/pic/11002568.jpg"
+                alt="預定景點圖片"
+              />
 
-            <div class="booking-trip-card__info">
-              <a class="booking-trip-card__name" href="/attraction/10">
-                台北一日遊：<span id="booking-attraction-name">平安鐘</span>
-              </a>
+              <div class="booking-trip-card__info">
+                <a class="booking-trip-card__name" href="/attraction/10">
+                  台北一日遊：<span id="booking-attraction-name">平安鐘</span>
+                </a>
 
-              <p class="booking-trip-card__line">
-                <span class="booking-trip-card__label">日期：</span>
-                <span id="booking-date">2021-04-23</span>
-              </p>
+                <p class="booking-trip-card__line">
+                  <span class="booking-trip-card__label">日期：</span>
+                  <span id="booking-date">2021-04-23</span>
+                </p>
 
-              <p class="booking-trip-card__line">
-                <span class="booking-trip-card__label">時間：</span>
-                <span id="booking-time">早上 9 點到下午 4 點</span>
-              </p>
+                <p class="booking-trip-card__line">
+                  <span class="booking-trip-card__label">時間：</span>
+                  <span id="booking-time">早上 9 點到下午 4 點</span>
+                </p>
 
-              <p class="booking-trip-card__line">
-                <span class="booking-trip-card__label">費用：</span>
-                <span id="booking-price">新台幣 2000 元</span>
-              </p>
+                <p class="booking-trip-card__line">
+                  <span class="booking-trip-card__label">費用：</span>
+                  <span id="booking-price">新台幣 2000 元</span>
+                </p>
 
-              <p class="booking-trip-card__line booking-trip-card__line--address">
-                <span class="booking-trip-card__label">地點：</span>
-                <span id="booking-address">台北市 大安區忠孝東路4段</span>
-              </p>
+                <p class="booking-trip-card__line booking-trip-card__line--address">
+                  <span class="booking-trip-card__label">地點：</span>
+                  <span id="booking-address">台北市 大安區忠孝東路4段</span>
+                </p>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        <div class="thankyou__actions">
-          <a class="btn" href="/">回到首頁</a>
+          <div class="thankyou__actions">
+            <a class="btn" href="/">回到首頁</a>
+          </div>
         </div>
       </div>
+    </div>
+  </main>
         
 
   <!-- 4) Footer -->

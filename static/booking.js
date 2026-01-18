@@ -315,7 +315,7 @@
             return;
           }
 
-          window.location.href = `thankyou?number=${encodeURIComponent(order_number)}`;
+          window.location.href = `/thankyou?number=${encodeURIComponent(order_number)}`;
         } catch (err) {
             alert(err.message || "取得 prime 失敗")
         } finally {

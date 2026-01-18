@@ -625,13 +625,6 @@ async def create_order(request: Request, body: dict = Body(...)):
 	
 	# 解析 prime + order + contact
 	prime = str(body.get("prime", "")).strip()
-	order_obj = body.get("order") or {}
-	price = order_obj.get("price")
-	trip = order_obj.get("trip") or {}
-	attraction = trip.get("attraction") or {}
-	attraction_id = attraction.get("id")
-	date = order_obj.get("date", "")
-	time = order_obj.get("time", "")
 	contact_obj = body.get("contact", "")
 	contact_name = str(contact_obj.get("name", "")).strip()
 	contact_email = str(contact_obj.get("email", "")).strip()
@@ -640,25 +633,59 @@ async def create_order(request: Request, body: dict = Body(...)):
 	if not prime or not contact_name or not contact_email or not contact_phone:
 		return JSONResponse(status_code=400, content={"error": True, "message": "訂單建立失敗，輸入不正確或其他原因"})
 
-	# 建 order_number：「目前系統時間（秒）」＋「4 位數隨機碼」
-	order_number = datetime.now().strftime("%Y%m%d%H%M%S") + f"{random.randint(0, 9999):04d}" # f"{...:04d}" 把 0 ~ 9999 的整數補成固定 4 位數（不足左邊補 0）
-
-	# 建立訂單並把 booking 刪掉
 	con = None
 	cursor = None
 	try:
 		con = get_connection()
 		cursor = con.cursor(dictionary=True)
-		insert_order_sql = """
-			INSERT INTO orders
-			(order_number, user_id, attraction_id, date, time, price, contact_name, contact_email, contact_phone, status)
-			VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,'UNPAID')
-		"""
-		cursor.execute(insert_order_sql, (order_number, user_id, attraction_id, date, time, price, contact_name, contact_email, contact_phone))
 		
-		order_id = cursor.lastrowid # 剛剛那次 INSERT 產生的資料的 id（因為主鍵 id 是 AUTO_INCREMENT 自動產生的）
+		# booking 資訊 以 DB 為準（不要相信前端，避免被竄改）
+		cursor.execute("SELECT attraction_id, date, time, price FROM bookings WHERE user_id=%s", (user_id,))
+		booking = cursor.fetchone()
+		attraction_id = booking["attraction_id"]
+		date = booking["date"]
+		time = booking["time"]
+		price = int(booking["price"])
 
-		cursor.execute("DELETE FROM bookings WHERE user_id=%s", (user_id,))
+		# 寫入 DB：有 order 時覆蓋；沒 order 時建立
+		# 找「同一 booking 」最新的 UNPAID 訂單
+		cursor.execute(
+            """
+            SELECT id, order_number
+            FROM orders
+            WHERE user_id=%s
+              AND status='UNPAID'
+              AND attraction_id=%s
+              AND date=%s
+              AND time=%s
+              AND price=%s
+            """,
+            (user_id, attraction_id, date, time, price)
+        )
+		existing = cursor.fetchone()
+		if existing:
+			order_id = existing["id"]
+			order_number = existing["order_number"]
+			cursor.execute(
+                """
+                UPDATE orders
+                SET contact_name=%s, contact_email=%s, contact_phone=%s
+                WHERE id=%s
+                """,
+                (contact_name, contact_email, contact_phone, order_id)
+            )
+		else:
+			# 建 order_number：「目前系統時間（秒）」＋「4 位數隨機碼」
+			order_number = datetime.now().strftime("%Y%m%d%H%M%S") + f"{random.randint(0, 9999):04d}" # f"{...:04d}" 把 0 ~ 9999 的整數補成固定 4 位數（不足左邊補 0）
+
+			insert_order_sql = """
+				INSERT INTO orders
+				(order_number, user_id, attraction_id, date, time, price, contact_name, contact_email, contact_phone, status)
+				VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,'UNPAID')
+			"""
+			cursor.execute(insert_order_sql, (order_number, user_id, attraction_id, date, time, price, contact_name, contact_email, contact_phone))
+			
+			order_id = cursor.lastrowid # 剛剛那次 INSERT 產生的資料的 id（因為主鍵 id 是 AUTO_INCREMENT 自動產生的）
 		con.commit()
 
 		# 呼叫 TapPay 付款
@@ -683,6 +710,7 @@ async def create_order(request: Request, body: dict = Body(...)):
 
 		if tappay_status == 0:
 			cursor.execute("UPDATE orders SET status='PAID' WHERE id=%s", (order_id,))
+			cursor.execute("DELETE FROM bookings WHERE user_id=%s", (user_id,))
 		con.commit()
 
 		return {
@@ -707,7 +735,78 @@ async def create_order(request: Request, body: dict = Body(...)):
 
 # 根據訂單編號取得訂單資訊
 @app.get("/api/order/{orderNumber}")
-# async def
+async def get_order(orderNumber: str, request: Request):
+	payload = get_current_user(request)
+	if not payload:
+		return JSONResponse(status_code=403, content={"error": True, "message": "未登入系統，拒絕存取"})
+	user_id = payload["id"]
+
+	con = None
+	cursor = None
+	try:
+		con = get_connection()
+		cursor = con.cursor(dictionary=True)
+
+		sql = """
+			SELECT
+				o.order_number,
+				o.attraction_id,
+				o.price,
+				o.date,
+				o.time,
+				o.contact_name,
+				o.contact_email,
+				o.contact_phone,
+				o.status AS order_status,
+				a.name AS attraction_name,
+				a.address AS attraction_address,
+				(SELECT url FROM images WHERE attraction_id = o.attraction_id LIMIT 1) AS attraction_image
+			FROM orders o
+			JOIN attractions a ON o.attraction_id = a.id
+			WHERE o.order_number = %s AND o.user_id = %s
+		"""
+		cursor.execute(sql, (orderNumber, user_id))
+		row = cursor.fetchone()
+
+		if not row:
+			return JSONResponse(status_code=400, content={"error": True, "message": "訂單編號不正確"})
+		
+		date_val = row["date"].isoformat() # row["date"]是Python 的 datetime.date 物件，要轉字串
+		paid = (row["order_status"] == "PAID")
+
+		return {
+			"data": {
+				"number": row["order_number"],
+				"price": row["price"],
+				"trip": {
+					"attraction": {
+						"id": row["attraction_id"],
+						"name": row["attraction_name"],
+						"address": row["attraction_address"],
+						"image": row.get("attraction_image") or ""
+					},
+					"date": date_val,
+					"time": row["time"]
+				},
+				"contact": {
+					"name": row["contact_name"],
+					"email": row["contact_email"],
+					"phone": row["contact_phone"]
+				},
+				"status": 0 if paid else 1 # 0=已付款、1=未付款
+			}
+		}
+
+	except Exception as e:
+		if con:
+			con.rollback()
+		return JSONResponse(status_code=500, content={"error": True, "message": str(e)})
+
+	finally:
+		if cursor:
+			cursor.close()
+		if con:
+			con.close()
 
 # Static Pages (Never Modify Code in this Block)
 @app.get("/", include_in_schema=False) # include_in_schema=False 會把這個路由從 API 文件中隱藏
