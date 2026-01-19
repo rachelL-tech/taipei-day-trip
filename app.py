@@ -40,7 +40,9 @@ pool = mysql.connector.pooling.MySQLConnectionPool(
 )
 # 從 pool 拿連線
 def get_connection():
-	return pool.get_connection()
+	con = pool.get_connection()
+	con.ping(reconnect=True) # 如果連線已被 server 斷掉 → driver 會幫你「重連」並把連線恢復到可用狀態
+	return con
 
 ## JWT 設定
 JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret-change-me")  # JWT 簽章密鑰

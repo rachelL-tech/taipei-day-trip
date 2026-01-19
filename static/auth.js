@@ -261,15 +261,17 @@
         }
     }
 
-    function clearPendingBooking(booking) {
+    function clearPendingBooking() {
         sessionStorage.removeItem(PENDING_BOOKING_KEY);
     }
 
     // ===== 事件監聽 =====
     // 點擊 authLink，根據登入狀態，決定打開 dialog 或 登出
-    authLink.addEventListener("click", (e) => {
+    authLink.addEventListener("click", async (e) => {
         e.preventDefault();
         
+        await checkSignInStatus();  // 更新 state
+
         if (state.signedIn) {
             // 登出後狀態重置
             clearToken();
