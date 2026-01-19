@@ -8,6 +8,11 @@ from dotenv import load_dotenv
 import time  # 產生 token 過期時間（exp）用 UNIX timestamp
 import jwt # PyJWT：負責 JWT encode / decode
 import bcrypt  # bcrypt：雜湊密碼與驗證密碼
+import json
+import random
+from datetime import datetime
+from urllib.request import Request as urlRequest, urlopen
+from urllib.error import URLError, HTTPError
 
 app = FastAPI()
 
@@ -20,7 +25,6 @@ DB_HOST = os.getenv("DB_HOST", "localhost") # 去系統的環境變數裡找 DB_
 DB_USER = os.getenv("DB_USER", "root")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_NAME = os.getenv("DB_NAME", "taipei_day_trip")
-
 dbconfig = {
 		"host": DB_HOST,
 		"user": DB_USER,
@@ -34,7 +38,6 @@ pool = mysql.connector.pooling.MySQLConnectionPool(
 	pool_reset_session=True,
 	**dbconfig
 )
-
 # 從 pool 拿連線
 def get_connection():
 	return pool.get_connection()
@@ -43,7 +46,6 @@ def get_connection():
 JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret-change-me")  # JWT 簽章密鑰
 JWT_ALG = "HS256"  # JWT 使用 HS256 演算法（對稱式：同一把 secret 簽章與驗證）
 JWT_EXPIRE_SECONDS = 7 * 24 * 60 * 60  # token 有效期 7 天
-
 # 產生 JWT token（本身是由伺服器簽發，不是密碼算出來的，代表某時某刻，伺服器曾經認證過這個人，並允許他在某段時間內帶著這個 token 行動）
 def make_token(user_id: int, name: str, email: str):
     payload = {  # JWT payload（放在 token 裡的「聲明」）
@@ -56,7 +58,6 @@ def make_token(user_id: int, name: str, email: str):
     if isinstance(token, bytes): # 有些環境 jwt.encode 可能回 bytes
         token = token.decode("utf-8") # 轉成字串給前端
     return token
-
 # 從 Authorization: Bearer <token> 取出 token 字串
 def get_bearer_token(request: Request):
     auth = request.headers.get("Authorization")  # 讀取 Authorization header
@@ -68,7 +69,6 @@ def get_bearer_token(request: Request):
     if token == "": # token 空字串：當作未登入
         return None
     return token
-
 # 從 request 讀取並驗證 token，回傳 payload（或 None）
 def get_current_user(request: Request):
 	token = get_bearer_token(request)
@@ -79,6 +79,63 @@ def get_current_user(request: Request):
 		return payload
 	except: # token 是壞掉的字串、簽章不對（secret 不匹配 / 被竄改）、token 過期、algorithms 不符合、程式自己的 bug（JWT_SECRET 沒定義、JWT_ALG 打錯字）
 		return None
+
+## TapPay 設定
+TAPPAY_PARTNER_KEY = os.getenv("TAPPAY_PARTNER_KEY")
+TAPPAY_MERCHANT_ID = os.getenv("TAPPAY_MERCHANT_ID")
+TAPPAY_PAY_BY_PRIME_URL = os.getenv(
+    "TAPPAY_PAY_BY_PRIME_URL",
+    "https://sandbox.tappaysdk.com/tpc/payment/pay-by-prime"
+)
+# 呼叫 TapPay（dict → JSON bytes → POST → JSON dict）
+def tappay_pay_by_prime(prime: str, amount: int, order_number: str, contact: dict):
+    if not TAPPAY_PARTNER_KEY or not TAPPAY_MERCHANT_ID:
+        raise RuntimeError("TapPay keys not configured (.env missing)")
+
+	# 組 TapPay API 的 request body
+    payload = {
+        "prime": prime,
+        "partner_key": TAPPAY_PARTNER_KEY,
+        "merchant_id": TAPPAY_MERCHANT_ID,
+        "amount": int(amount),
+		"currency": "TWD",
+        "details": "TapPay Test",
+        "order_number": order_number,
+        "cardholder": {
+            "phone_number": contact["phone"],
+            "name": contact["name"],
+            "email": contact["email"],
+        },
+    }
+
+	# 把 payload 變成 JSON bytes（HTTP request body 必須是 bytes）
+    data = json.dumps(payload).encode("utf-8")
+
+	# 建立 HTTP Request 物件
+    req = urlRequest(
+        TAPPAY_PAY_BY_PRIME_URL, # API endpoint
+        headers={
+            "Content-Type": "application/json",
+            "x-api-key": TAPPAY_PARTNER_KEY, # TapPay 用這個 header 驗證
+        },
+        method="POST", # TapPay 的 Pay-by-Prime 是 POST
+		data=data, # request body
+    )
+
+	# 送出 request，讀回 response（把 prime + 金額 + merchant/partner 資訊送到 TapPay，TapPay 會去跟銀行做授權，再傳回交易成功/失敗與原因）
+    try: 
+        with urlopen(req, timeout=30) as resp: # 最多等 30 秒
+            body = resp.read().decode("utf-8") # 讀取 response body（bytes），轉成 JSON 字串
+            return json.loads(body) # 把 JSON 字串轉回 Python dict
+    except HTTPError as e: # TapPay 伺服器回 HTTPError
+        body = e.read().decode("utf-8") if getattr(e, "fp", None) else ""  # e.read()：讀取放在 body 的 JSON 錯誤訊息；getattr(e, "fp", None)：拿物件 e 身上的屬性 "fp"，如果 e 沒有這個屬性，就回傳 None　→ 確保有 body 才讀
+        try: # 如果 body 是 JSON，就 parse 成 dict 回傳；如果沒有 body，就回傳自訂 dict
+            return json.loads(body) if body else {"status": -1, "msg": f"HTTPError {e.code}"}
+        except Exception: # 如果 body 不是 JSON（HTML 或純文字），就直接把 body 塞到 msg
+            return {"status": -1, "msg": body or f"HTTPError {getattr(e, 'code', '')}"}
+    except URLError as e: # 網路層錯誤：DNS、連不上、timeout、被擋
+        return {"status": -1, "msg": f"URLError: {getattr(e, 'reason', str(e))}"}
+
 
 ## 路由
 # 註冊一個新的會員
@@ -551,6 +608,200 @@ async def delete_booking(request: Request):
 			con.rollback()
 		return JSONResponse(status_code=500, content={"error": True, "message": str(e)})
 	
+	finally:
+		if cursor:
+			cursor.close()
+		if con:
+			con.close()
+
+# 建立新的訂單，並串接第三方金流，完成付款程序
+@app.post("/api/orders")
+async def create_order(request: Request, body: dict = Body(...)):
+	# 驗權限
+	payload = get_current_user(request)
+	if not payload:
+		return JSONResponse(status_code=403, content={"error": True, "message": "未登入系統，拒絕存取"})
+	user_id = payload["id"]
+	
+	# 解析 prime + order + contact
+	prime = str(body.get("prime", "")).strip()
+	contact_obj = body.get("contact", "")
+	contact_name = str(contact_obj.get("name", "")).strip()
+	contact_email = str(contact_obj.get("email", "")).strip()
+	contact_phone = str(contact_obj.get("phone", "")).strip()
+
+	if not prime or not contact_name or not contact_email or not contact_phone:
+		return JSONResponse(status_code=400, content={"error": True, "message": "訂單建立失敗，輸入不正確或其他原因"})
+
+	con = None
+	cursor = None
+	try:
+		con = get_connection()
+		cursor = con.cursor(dictionary=True)
+		
+		# booking 資訊 以 DB 為準（不要相信前端，避免被竄改）
+		cursor.execute("SELECT attraction_id, date, time, price FROM bookings WHERE user_id=%s", (user_id,))
+		booking = cursor.fetchone()
+		attraction_id = booking["attraction_id"]
+		date = booking["date"]
+		time = booking["time"]
+		price = int(booking["price"])
+
+		# 寫入 DB：有 order 時覆蓋；沒 order 時建立
+		# 找「同一 booking 」最新的 UNPAID 訂單
+		cursor.execute(
+            """
+            SELECT id, order_number
+            FROM orders
+            WHERE user_id=%s
+              AND status='UNPAID'
+              AND attraction_id=%s
+              AND date=%s
+              AND time=%s
+              AND price=%s
+            """,
+            (user_id, attraction_id, date, time, price)
+        )
+		existing = cursor.fetchone()
+		if existing:
+			order_id = existing["id"]
+			order_number = existing["order_number"]
+			cursor.execute(
+                """
+                UPDATE orders
+                SET contact_name=%s, contact_email=%s, contact_phone=%s
+                WHERE id=%s
+                """,
+                (contact_name, contact_email, contact_phone, order_id)
+            )
+		else:
+			# 建 order_number：「目前系統時間（秒）」＋「4 位數隨機碼」
+			order_number = datetime.now().strftime("%Y%m%d%H%M%S") + f"{random.randint(0, 9999):04d}" # f"{...:04d}" 把 0 ~ 9999 的整數補成固定 4 位數（不足左邊補 0）
+
+			insert_order_sql = """
+				INSERT INTO orders
+				(order_number, user_id, attraction_id, date, time, price, contact_name, contact_email, contact_phone, status)
+				VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,'UNPAID')
+			"""
+			cursor.execute(insert_order_sql, (order_number, user_id, attraction_id, date, time, price, contact_name, contact_email, contact_phone))
+			
+			order_id = cursor.lastrowid # 剛剛那次 INSERT 產生的資料的 id（因為主鍵 id 是 AUTO_INCREMENT 自動產生的）
+		con.commit()
+
+		# 呼叫 TapPay 付款
+		tappay_result = tappay_pay_by_prime(
+            prime=prime,
+            amount=price,
+            order_number=order_number,
+            contact={"name": contact_name, "email": contact_email, "phone": contact_phone}
+        )
+
+		# 寫入 payment record（成功/失敗都要存）+ 更新 order 狀態
+		tappay_status = int(tappay_result.get("status", -1)) # -1 表示非 TapPay 正常回應的失敗（如：網路錯誤 / timeout / 回傳不是 JSON / 錯誤 dict）
+		tappay_msg = str(tappay_result.get("msg", ""))[:255]
+
+		cursor.execute(
+			"""
+            INSERT INTO payments(order_id, tappay_status, tappay_msg)
+            VALUES(%s,%s,%s)
+            """,
+            (order_id, tappay_status, tappay_msg)
+        )
+
+		if tappay_status == 0:
+			cursor.execute("UPDATE orders SET status='PAID' WHERE id=%s", (order_id,))
+			cursor.execute("DELETE FROM bookings WHERE user_id=%s", (user_id,))
+		con.commit()
+
+		return {
+			"data": {
+				"number": order_number,
+				"payment": {
+					"status": 0 if (tappay_status == 0) else 1,
+					"message": "付款成功" if (tappay_status == 0) else "付款失敗"
+				}
+			}
+		}
+
+	except Exception as e:
+		if con:
+			con.rollback()
+		return JSONResponse(status_code=500, content={"error": True, "message": str(e)})
+	finally:
+		if cursor:
+			cursor.close()
+		if con:
+			con.close()
+
+# 根據訂單編號取得訂單資訊
+@app.get("/api/order/{orderNumber}")
+async def get_order(orderNumber: str, request: Request):
+	payload = get_current_user(request)
+	if not payload:
+		return JSONResponse(status_code=403, content={"error": True, "message": "未登入系統，拒絕存取"})
+	user_id = payload["id"]
+
+	con = None
+	cursor = None
+	try:
+		con = get_connection()
+		cursor = con.cursor(dictionary=True)
+
+		sql = """
+			SELECT
+				o.order_number,
+				o.attraction_id,
+				o.price,
+				o.date,
+				o.time,
+				o.contact_name,
+				o.contact_email,
+				o.contact_phone,
+				o.status AS order_status,
+				a.name AS attraction_name,
+				a.address AS attraction_address,
+				(SELECT url FROM images WHERE attraction_id = o.attraction_id LIMIT 1) AS attraction_image
+			FROM orders o
+			JOIN attractions a ON o.attraction_id = a.id
+			WHERE o.order_number = %s AND o.user_id = %s
+		"""
+		cursor.execute(sql, (orderNumber, user_id))
+		row = cursor.fetchone()
+
+		if not row:
+			return JSONResponse(status_code=400, content={"error": True, "message": "訂單編號不正確"})
+		
+		date_val = row["date"].isoformat() # row["date"]是Python 的 datetime.date 物件，要轉字串
+		paid = (row["order_status"] == "PAID")
+
+		return {
+			"data": {
+				"number": row["order_number"],
+				"price": row["price"],
+				"trip": {
+					"attraction": {
+						"id": row["attraction_id"],
+						"name": row["attraction_name"],
+						"address": row["attraction_address"],
+						"image": row["attraction_image"] or ""
+					},
+					"date": date_val,
+					"time": row["time"]
+				},
+				"contact": {
+					"name": row["contact_name"],
+					"email": row["contact_email"],
+					"phone": row["contact_phone"]
+				},
+				"status": 0 if paid else 1 # 0=已付款、1=未付款
+			}
+		}
+
+	except Exception as e:
+		if con:
+			con.rollback()
+		return JSONResponse(status_code=500, content={"error": True, "message": str(e)})
+
 	finally:
 		if cursor:
 			cursor.close()

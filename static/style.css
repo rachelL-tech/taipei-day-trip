@@ -972,6 +972,22 @@ body .page__main { /* 但 main 內容區仍維持白底 */
   height: 24px;
 }
 
+/* ===== TapPay Fields ===== */
+.tpfield {
+  width: 200px;
+  height: 38px;
+  padding: 10px 10px;
+  border: 1px solid #E8E8E8;
+  border-radius: 5px;
+  background: #fff;
+}
+
+/* TapPay 會在 focus 時幫容器自動加上這個 class */
+.tappay-field-focus {
+  border-color: #66afe9;
+  box-shadow: 0 0 0 3px rgba(102, 175, 233, .25);
+}
+
 /* form rows */
 .booking-page__form-row {
   display: flex; /* 一行內「label + input」水平排 */
@@ -1073,16 +1089,144 @@ body .page__main { /* 但 main 內容區仍維持白底 */
     margin: 0;
   }
 
-  .booking-page__label {
-    min-width: 80px;
-  }
-
-  .booking-page__input {
-    width: 100%;
-    max-width: 260px;
-  }
-
   .booking-page__hint {
     height: 48px;
+  }
+}
+
+/* ===== Thankyou Page ===== */
+#payment-content {
+  margin-top: 10px;
+}
+
+#payment-content--failed,
+#payment-content--success {
+  border: 1px solid #E8E8E8;
+  border-radius: 8px;
+  background: #fff;
+  padding: 22px 20px;
+  box-shadow: 0 2px 18px rgba(0,0,0,.06);
+}
+
+/* 說明文字 */
+.thankyou__desc {
+  margin: 0 0 14px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #666;
+  font-weight: 600;
+}
+
+/* 訂單號碼區 */
+.thankyou__number {
+  margin: 0 0 18px;
+  display: inline-flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f7f7f7;
+  border: 1px dashed #E0E0E0;
+  color: #666;
+}
+
+.thankyou__number span[data-order-number] {
+  font-weight: 800;
+  color: #111;
+  letter-spacing: 0.5px;
+}
+
+/* 按鈕列 */
+.thankyou__actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+/* 共用 Button */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  height: 40px;
+  padding: 0 16px;
+
+  border-radius: 6px;
+  border: 1px solid transparent;
+
+  background: #448899;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+
+  cursor: pointer;
+  user-select: none;
+  transition: transform 120ms ease, filter 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.btn:hover {
+  filter: brightness(0.95);
+  box-shadow: 0 6px 18px rgba(68,136,153,.18);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+/* 次要按鈕（回首頁這種） */
+.btn--ghost {
+  background: #fff;
+  color: #448899;
+  border-color: #448899;
+}
+
+.btn--ghost:hover {
+  background: rgba(68,136,153,.08);
+  filter: none;
+}
+
+/* 成功頁面下方的「景點資訊」區塊微調：讓它像卡片、跟上面狀態卡一致 */
+#payment-content--success section {
+  margin-top: 16px;
+  border-top: 1px solid #E8E8E8;
+  padding-top: 16px;
+}
+
+/* thankyou 成功 */
+#payment-content--success .booking-trip-card {
+  border: 1px solid #E8E8E8;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+#payment-content--success .booking-trip-card__info {
+  padding: 16px 16px 14px;
+  height: auto;
+}
+
+#payment-content--success .booking-trip-card__name {
+  margin-bottom: 14px;
+}
+
+#payment-content--success .booking-trip-card__line {
+  margin-bottom: 8px;
+  height: auto;
+}
+
+@media (max-width: 600px) {
+  #payment-content--failed,
+  #payment-content--success {
+    padding: 18px 14px;
+  }
+
+  .thankyou__actions {
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
   }
 }
