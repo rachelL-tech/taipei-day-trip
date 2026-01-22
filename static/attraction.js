@@ -83,7 +83,7 @@
   }
 
   function getCheckedTime() {
-    const checked = document.querySelector('input[name="time"]:checked'); // 選到 <input> ＋ name="time"＋目前已勾選的 DOM 元素
+    const checked = document.querySelector('input[name="time"]:checked'); // 選到 <input> ＋ name="time"＋ 目前勾選的 DOM 元素
     if(!checked) return "morning";
     return checked.value;
   }
@@ -104,6 +104,21 @@
   const leftBtn = document.querySelector(".carousel__btn--left");
   const rightBtn = document.querySelector(".carousel__btn--right");
 
+  // 無限循環輪播：第一張往左時跳到最後一張；最後一張往右時跳到第一張。例如count = 5 ， i = -1 時，return 4 ；i = 5 時，return 0
+  function normalizeIndex(i, count) {
+    return ((i % count) + count) % count; // 負數也能正確循環
+  }
+
+  function showSlide(targetIndex) {
+    const count = images.length;
+    if (!imgEl || count === 0) return;
+
+    currentIndex = normalizeIndex(targetIndex, count);
+    imgEl.src = images[currentIndex];
+    imgEl.alt = nameEl.textContent ?? "";
+    setActiveSegment(currentIndex);
+  }
+  
   // 把click事件翻譯成使用者想去第幾張
   function bindSlideshow() {
     if (leftBtn) leftBtn.addEventListener("click", () => showSlide(currentIndex - 1));
@@ -126,21 +141,6 @@
     document.querySelectorAll(".carousel__segment").forEach((seg, i) => {
       seg.classList.toggle("is-active", i === activeIndex); // toggle(className, condition) 代表 condition 是 true 時 → 加上 "is-active"（原本就有的話 → 維持不變，不會重複加）; condition 是 false 時 → 移除 "is-active"（原本沒有的話 → 維持不變）
     });
-  }
-
-  // 無限循環輪播：第一張往左時跳到最後一張；最後一張往右時跳到第一張。例如count = 5 ， i = -1 時，return 4 ；i = 5 時，return 0
-  function normalizeIndex(i, count) {
-  return ((i % count) + count) % count; // 負數也能正確循環
-  }
-
-  function showSlide(targetIndex) {
-    const count = images.length;
-    if (!imgEl || count === 0) return;
-
-    currentIndex = normalizeIndex(targetIndex, count);
-    imgEl.src = images[currentIndex];
-    imgEl.alt = nameEl.textContent ?? "";
-    setActiveSegment(currentIndex);
   }
 
   // Part 5-4: Create a Booking

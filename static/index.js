@@ -102,7 +102,7 @@
   }
 
   // 把「多筆 attraction 資料陣列」渲染到 gridEl 裡
-  function renderAttractions(list, { replace = false } = {}) {
+  function renderAttractions(list, { replace = false } = {}) { // = {} ：第二參數沒傳（是 undefined），就用空物件 {} 代替，解構才不會報錯；{ replace = false }從第二個參數物件裡拿出 replace，如果沒提供就預設 false
     if (replace) gridEl.textContent = "";
 
     const frag = document.createDocumentFragment(); // 在記憶體裡先建立一個「看不見的暫存容器」再一次插入，避免一直操作 DOM ，效能跟流暢度會比較好
@@ -174,12 +174,6 @@
         if (observer) observer.disconnect();
         return;
     }
-
-    // if (state.isLoading) {
-    //     state.pendingLoadMore = true;
-    //     return;
-    // }
-
     loadNextPage();
   }
 
@@ -202,16 +196,6 @@
         if (observer) observer.disconnect();
     } finally {
         state.isLoading = false;
-
-        // if (state.pendingLoadMore) {
-        // state.pendingLoadMore = false;
-        // requestLoadMore();
-        // return;
-        // }
-
-        // if (state.nextPage !== null && isElementInViewport(sentinelEl)) {
-        // requestLoadMore();
-        // }
     }
   }
 
@@ -304,7 +288,7 @@
       e.preventDefault(); // 不刷新頁面
 
       // 讀取 keyword（trim），空字串就視為「沒有 keyword」
-      const kw = keywordInput.value.trim(); // 更好寫法是 const kw = (keywordInput?.value ?? "").trim();
+      const kw = keywordInput.value.trim();
       state.keyword = kw; 
       
       // 重新載入第一頁（replace）
