@@ -118,6 +118,7 @@
     if (state.isLoading) return; // 防止重複觸發
 
     state.isLoading = true;
+    window.AppUI.startLoading();
 
     try {
       const json = await fetchAttractions({
@@ -134,12 +135,9 @@
       state.nextPage = null;
     } finally {
       state.isLoading = false;
+      window.AppUI.stopLoading();
 
       setupObserver(); // for Part 2-3
-
-    //   if (state.nextPage !== null && isElementInViewport(sentinelEl)) {
-    //     requestLoadMore();
-    //   }
     }
   }
 
@@ -148,11 +146,6 @@
   if (!sentinelEl) return;
 
   let observer = null;
-
-//   function isElementInViewport(el) {
-//     const rect = el.getBoundingClientRect();
-//     return rect.top < window.innerHeight && rect.bottom > 0;
-//   }
 
   function setupObserver() {
     if (observer) observer.disconnect();
@@ -183,6 +176,7 @@
 
     const pageToLoad = state.nextPage;
     state.isLoading = true;
+    window.AppUI.startLoading();
 
     try {
         const json = await fetchAttractions({ page: pageToLoad, category: state.category, keyword: state.keyword });
@@ -196,6 +190,7 @@
         if (observer) observer.disconnect();
     } finally {
         state.isLoading = false;
+        window.AppUI.stopLoading();
     }
   }
 
@@ -208,7 +203,12 @@
 
   function setPanelOpen(isOpen) {
     if (!categoryPanelEl || !categoryTriggerBtn) return;
-    categoryPanelEl.hidden = !isOpen;
+
+    if (window.AppUI.fadeToggle) {
+      window.AppUI.fadeToggle(categoryPanelEl, isOpen);
+    } else {
+      categoryPanelEl.hidden = !isOpen;
+    }
   }
 
   function togglePanel() {
@@ -273,7 +273,7 @@
 
       const category = item.dataset.category;
       setCurrentCategory(category);
-      categoryPanelEl.hidden = true;
+      setPanelOpen(false);
     });
   }
 
@@ -361,6 +361,7 @@
   async function initMrtList() {
     if (!mrtListEl) return;
 
+    window.AppUI.startLoading();
     try {
       const resp = await fetch("/api/mrts");
       if (!resp.ok) throw new Error(`Fetch /api/mrts failed: ${resp.status}`);
@@ -372,6 +373,8 @@
       bindMrtArrows();
     } catch (err) {
       console.error(err);
+    } finally {
+      window.AppUI.stopLoading();
     }
   }
   

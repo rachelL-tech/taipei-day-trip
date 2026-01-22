@@ -473,6 +473,63 @@ button { font: inherit; }
 .auth-form__message.is-error { color: #c43131; }
 .auth-form__message.is-success { color: #2a7b2a; }
 
+/* ===== AppUI: Top Loading Bar ===== */
+.top-loading {
+  position: fixed; /* 固定在視窗上，不會因為頁面滾動而跑掉 */
+  left: 0; /* 貼齊上方，左右撐滿整個視窗寬度 */
+  right: 0;
+  top: 0;
+  height: 3px;
+  z-index: 2001;
+  /* pointer-events: none; 這條 bar 不會吃掉滑鼠事件（例如點最上方的按鈕/連結，不會被它擋住）。 */
+
+  opacity: 0; /* 預設透明（看不到），配合 is-active 切到 1 做淡入 */
+  transition: opacity 160ms ease;   /* 當 opacity/transform 改變時，走動畫而不是瞬間跳 */
+}
+
+.top-loading.is-active {
+  opacity: 1;
+}
+
+.top-loading__bar {
+  height: 100%; /* 內條高度等於外層容器 */
+  width: 35%;
+  background: linear-gradient(
+    90deg,
+    rgba(68, 136, 153, 0) 0%,
+    rgba(68, 136, 153, 1) 50%,
+    rgba(68, 136, 153, 0) 100%
+  ); /* 做出中間亮、兩側透明的光帶 */
+  animation: topLoadingMove 900ms ease-in-out infinite; /* 套用 keyframes 讓光帶一直水平移動：把 topLoadingMove 的動畫套用在此元素上，每一輪跑 900ms，速度曲線是 ease-in-out（一開始慢 → 中間快 → 結尾慢），而且無限重複（一直跑，代表「還在載入」） */
+}
+
+/* 定義光帶移動：從螢幕左外面 → 跑過去 → 跑到右外面 */
+@keyframes topLoadingMove {
+  0% { transform: translateX(-60%); }
+  50% { transform: translateX(160%); } /* 動畫跑到一半（900ms 的一半 = 450ms） */
+  100% { transform: translateX(360%); }
+}
+
+/* ===== AppUI: Fade/Slide utility ===== */
+.fade-slide {
+  opacity: 0; /* 預設看不到，等 is-open 才可見 */
+  transition: opacity 700ms ease; /* 淡入/滑入的動畫時間，當 opacity/transform 改變時，走動畫而不是瞬間跳 */
+}
+
+.fade-slide.is-open {
+  opacity: 1;
+}
+
+/* ===== Dialog/backdrop（<dialog> 在 showModal() 時，瀏覽器會自動產生的一層「遮罩」） ===== */
+.auth-dialog::backdrop {
+  background: rgba(0, 0, 0, 0); /* 一開始是 完全透明（黑色但 alpha=0） */
+  transition: background 700ms ease; /* 當 backdrop 的 background 值改變時，不要瞬間跳，而是用 700ms 的時間平滑過渡（ease：一開始慢、中間快、結尾慢） */
+}
+
+.auth-dialog.is-open::backdrop {
+  background: rgba(0, 0, 0, 0.25); /* 半透明的黑遮罩 */
+}
+
 /* ===== RWD：Tablet (<=1200px) ===== */
 @media (max-width: 1200px) {
     .hero__container,

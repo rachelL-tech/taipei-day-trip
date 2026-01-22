@@ -131,61 +131,66 @@
   }
 
   async function init() {
-    // 先把畫面收起來，避免閃假資料
-    if (emptyEl) emptyEl.hidden = true;
-    if (contentEl) contentEl.hidden = true;
-
-    const token = getToken();
-    if (!token) {
-      window.location.href = "/";
-      return;
-    }
-
-    // // Fetch User API to check user signed-in status, redirect to homepage if the user has not signed in.
-    let user = null;
+    window.AppUI?.startLoading();
     try {
-      user = await fetchUser(token);
-    } catch (err) {
-      console.error(err);
-    }
-    if (!user) {
-      clearToken();
-      window.location.href = "/";
-      return;
-    }
+      // 先把畫面收起來，避免閃假資料
+      if (emptyEl) emptyEl.hidden = true;
+      if (contentEl) contentEl.hidden = true;
 
-    userNameEl.textContent = user.name || "";
-    // 自動帶入聯絡資訊
-    if (contactNameEl && !contactNameEl.value) contactNameEl.value = user.name || "";
-    if (contactEmailEl && !contactEmailEl.value) contactEmailEl.value = user.email || "";
+      const token = getToken();
+      if (!token) {
+        window.location.href = "/";
+        return;
+      }
 
-    // Fetch Booking API to get booking data, render the booking page based on the response of API.
-    try {
-      const booking = await fetchBooking(token);
-
-      if (booking === "UNAUTHORIZED") {
+      // // Fetch User API to check user signed-in status, redirect to homepage if the user has not signed in.
+      let user = null;
+      try {
+        user = await fetchUser(token);
+      } catch (err) {
+        console.error(err);
+      }
+      if (!user) {
         clearToken();
         window.location.href = "/";
         return;
       }
 
-      if (!booking) {
-        showEmpty(); // 沒有預定行程
-        return;
+      userNameEl.textContent = user.name || "";
+      // 自動帶入聯絡資訊
+      if (contactNameEl && !contactNameEl.value) contactNameEl.value = user.name || "";
+      if (contactEmailEl && !contactEmailEl.value) contactEmailEl.value = user.email || "";
+
+      // Fetch Booking API to get booking data, render the booking page based on the response of API.
+      try {
+        const booking = await fetchBooking(token);
+
+        if (booking === "UNAUTHORIZED") {
+          clearToken();
+          window.location.href = "/";
+          return;
+        }
+
+        if (!booking) {
+          showEmpty(); // 沒有預定行程
+          return;
+        }
+
+        currentBooking = booking;
+
+        renderBooking(booking);
+        showContent();
+        bindDelete(token);
+
+        initTapPayFields();
+        bindSubmit(token);
+      } catch (err) {
+        console.error(err);
+        alert("載入失敗，請稍後再試");
+        showEmpty();
       }
-
-      currentBooking = booking;
-
-      renderBooking(booking);
-      showContent();
-      bindDelete(token);
-
-      initTapPayFields();
-      bindSubmit(token);
-    } catch (err) {
-      console.error(err);
-      alert("載入失敗，請稍後再試");
-      showEmpty();
+    } finally {
+    window.AppUI.stopLoading();
     }
   }
 
@@ -262,70 +267,74 @@
       }
       
       TPDirect.card.getPrime(async (result) => {
-        if (result.status !== 0){
-          alert("get prime failed " + result.msg);
-          return;
-        }
-
-        const prime = result.card.prime; // result.status == 0 代表 TapPay 已經拿到了這次付款所需的卡資料，並把它封裝成一個一次性、短時間有效的 token（這裡的 prime ）＝允許這次交易」的憑證；你可以拿這個 token 讓後端去請 TapPay 幫你扣款
-
         try {
-          const res = await fetch("/api/orders", {
-            method: "POST",
-            headers: { 
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`, 
-            },
-            body: JSON.stringify({
-              prime,
-              "order": {
-                "price": currentBooking.price,
-                "trip": {
-                  "attraction": {
-                    "id": currentBooking.attraction.id,
-                    "name": currentBooking.attraction.name,
-                    "address": currentBooking.attraction.address,
-                    "image": currentBooking.attraction.image
-                  }
-                },
-                "date": currentBooking.date,
-                "time": currentBooking.time,
-              },
-              contact
-            })
-          });
-          
-          // Part 6-4：After Order and Payment are Completed
-          if (res.status === 403){
-            clearToken();
-            window.location.href = "/";
-            return;
-          }
-          
-          const json = await res.json();
-
-          if (json.error) {
-            alert(json.message || "訂單建立失敗");
+          if (result.status !== 0){
+            alert("get prime failed " + result.msg);
             return;
           }
 
-          const order_number = json.data.number;
-          if (!order_number) {
-            alert("訂單建立完成，但未取得訂單編號");
-            return;
-          }
+          const prime = result.card.prime; // result.status == 0 代表 TapPay 已經拿到了這次付款所需的卡資料，並把它封裝成一個一次性、短時間有效的 token（這裡的 prime ）＝允許這次交易」的憑證；你可以拿這個 token 讓後端去請 TapPay 幫你扣款
 
-          window.location.href = `/thankyou?number=${encodeURIComponent(order_number)}`;
-        } catch (err) {
-            alert(err.message || "取得 prime 失敗")
-        } finally {
-          // 把按鈕狀態交回「目前 TapPay 欄位狀態」決定
           try {
-            const s = TPDirect.card.getTappayFieldsStatus();
-            submitBtn.disabled = !s.canGetPrime;
-          } catch {
-            submitBtn.disabled = false;
+            const res = await fetch("/api/orders", {
+              method: "POST",
+              headers: { 
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`, 
+              },
+              body: JSON.stringify({
+                prime,
+                "order": {
+                  "price": currentBooking.price,
+                  "trip": {
+                    "attraction": {
+                      "id": currentBooking.attraction.id,
+                      "name": currentBooking.attraction.name,
+                      "address": currentBooking.attraction.address,
+                      "image": currentBooking.attraction.image
+                    }
+                  },
+                  "date": currentBooking.date,
+                  "time": currentBooking.time,
+                },
+                contact
+              })
+            });
+            
+            // Part 6-4：After Order and Payment are Completed
+            if (res.status === 403){
+              clearToken();
+              window.location.href = "/";
+              return;
+            }
+            
+            const json = await res.json();
+
+            if (json.error) {
+              alert(json.message || "訂單建立失敗");
+              return;
+            }
+
+            const order_number = json.data.number;
+            if (!order_number) {
+              alert("訂單建立完成，但未取得訂單編號");
+              return;
+            }
+
+            window.location.href = `/thankyou?number=${encodeURIComponent(order_number)}`;
+          } catch (err) {
+              alert(err.message || "取得 prime 失敗")
+          } finally {
+            // 把按鈕狀態交回「目前 TapPay 欄位狀態」決定
+            try {
+              const s = TPDirect.card.getTappayFieldsStatus();
+              submitBtn.disabled = !s.canGetPrime;
+            } catch {
+              submitBtn.disabled = false;
+            }
           }
+        } finally {
+          window.AppUI.stopLoading();
         }
       });
     }
@@ -355,7 +364,6 @@
         onSubmit(token, contact);
       });
     }
-
   init();
 
 })();

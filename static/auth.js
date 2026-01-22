@@ -7,7 +7,7 @@
     const authLink = document.querySelector("#auth-link");
     const dialog = document.querySelector("#auth-dialog");
     const signinForm = document.querySelector("#signin-form");
-    const signupForm = document.querySelector("#signup-form");
+    const signupForm = document.querySelector("#signup-form"); 
 
     if (!authLink || !dialog || !signinForm || !signupForm) return;
 
@@ -33,10 +33,12 @@
     // 開/關 dialog
     function openAuthDialog() {
         switchForm("signin"); // 預設打開是登入表單，以符合「At the first shot, show a form for user sign in」： HTML 寫 signup-form hidden 只保證「頁面第一次載入時」的預設是登入表單；在關閉 dialog 後，DOM 狀態不會自動回到 HTML 初始狀態。因為使用者有可能曾經切換到註冊表單並關閉，因此要確保他在下次打開表單前，把表單切回登入表單
-        dialog.showModal();
+        window.AppUI.openDialog(dialog);
     }
     function closeAuthDialog() {
-        dialog.close();
+        if (!dialog.open) return; // 避免對已經關閉的 dialog 重複做關閉流程
+
+        window.AppUI.closeDialog(dialog);
     }
     window.AuthDialog = { open: openAuthDialog, close: closeAuthDialog }; // 把 openAuthDialog / closeAuthDialog 暴露到全域變數，讓其他js也能呼叫
 
@@ -108,6 +110,7 @@
         const btn = signupForm.querySelector('button[type="submit"]');
         if (btn) btn.disabled = true; // 避免使用者在 request 還沒回來前一直狂點，造成重複送出表單及競態問題（race condition）、以及更好的 UX（按下去後按鈕變不可點，使用者知道「正在處理」）
 
+        window.AppUI.startLoading();
         try {
             const res = await fetch("/api/user", {
                 method: "POST",
@@ -139,6 +142,7 @@
             setTimeout(() => setMessage(""), 2000);
         } finally {
             if (btn) btn.disabled = false; // 不管成功失敗，request 完成後都把按鈕設回可點
+            window.AppUI.stopLoading();
         }
     }
 

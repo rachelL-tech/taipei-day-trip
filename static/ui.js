@@ -21,7 +21,7 @@
     loadingCount += 1;
     const el = ensureTopLoading();
     el.hidden = false;
-    el.classList.add("is-active"); // 先讓 el 出現在畫面，下加上 class 觸發動畫
+    requestAnimationFrame(() => el.classList.add("is-active")); // 先讓 el 出現在畫面，下加上 class 觸發動畫
   };
 
   UI.stopLoading = function stopLoading() {
@@ -38,20 +38,34 @@
   };
 
   // 顯示/隱藏做 fade/slide
+  // 一般元件
   UI.fadeShow = function fadeShow(el) {
     if (!el) return;
     el.hidden = false;
-    el.classList.add("is-open");
+    requestAnimationFrame(() => el.classList.add("is-open"));
   };
 
   UI.fadeHide = function fadeHide(el) {
     if (!el) return;
     el.classList.remove("is-open");
-    window.setTimeout(() => (el.hidden = true), 170);
+    window.setTimeout(() => (el.hidden = true), 700);
   };
 
   UI.fadeToggle = function fadeToggle(el, open) {
     if (open) UI.fadeShow(el);
     else UI.fadeHide(el);
+  };
+
+  // dialog（因為 dialog 不是用 hidden 控制，要另外定義）
+  UI.openDialog = function (dialogEl) {
+    if (!dialogEl || dialogEl.open) return;
+    dialogEl.showModal();
+    requestAnimationFrame(() => dialogEl.classList.add("is-open"));
+  };
+
+  UI.closeDialog = function (dialogEl) {
+    if (!dialogEl || !dialogEl.open) return;
+    dialogEl.classList.remove("is-open");
+    window.setTimeout(() => dialogEl.close(), 700);
   };
 })();

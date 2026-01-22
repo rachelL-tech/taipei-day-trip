@@ -12,7 +12,6 @@
 
   let images = [];
   const TOKEN_KEY = "TOKEN";
-  const state = { signedIn: false };
   const PENDING_BOOKING_KEY = "PENDING_BOOKING";
 
   // 從網址抓 id ：不建議經過 index 的 click 事件把 id 存在 cookie/localStorage/變數，因為直接貼連結、在景點頁按重新整理、或從 Google 搜尋進來等情況，都不會經過 index 的 click 事件，而且cookie / localStorage 是「全站共享」，同時開很多不同 id 的 tab 會互相污染
@@ -58,12 +57,15 @@
   }
 
   async function init() {
+    window.AppUI.startLoading();
     try {
       const json = await fetchAttraction(attractionId);
       renderAttraction(json.data);
     } catch (err) {
       console.error(err);
       nameEl.textContent = "載入失敗，請稍後再試";
+    } finally {
+      window.AppUI.stopLoading();
     }
   }
 
@@ -136,12 +138,15 @@
     }
   }
 
-  // 更新 is-active 狀態
+  // 更新 segment 的 is-active 狀態
   function setActiveSegment(activeIndex) {
     document.querySelectorAll(".carousel__segment").forEach((seg, i) => {
       seg.classList.toggle("is-active", i === activeIndex); // toggle(className, condition) 代表 condition 是 true 時 → 加上 "is-active"（原本就有的話 → 維持不變，不會重複加）; condition 是 false 時 → 移除 "is-active"（原本沒有的話 → 維持不變）
     });
   }
+
+  // 圖片預載功能
+  
 
   // Part 5-4: Create a Booking
   function bindCreateBooking() {
@@ -175,6 +180,7 @@
         }
 
         // 已登入：直接建立預定
+        window.AppUI.startLoading();
         const res = await fetch("/api/booking", {
           method: "POST",
           headers: {
@@ -205,6 +211,7 @@
         return;
       } finally {
         if (btn) btn.disabled = false;
+        window.AppUI.stopLoading();
       }
     });
   }
