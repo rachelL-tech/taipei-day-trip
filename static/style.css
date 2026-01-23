@@ -567,6 +567,8 @@ button { font: inherit; }
 /* ===== Attraction Page ===== */
 .page__main { padding: 40px 0 0; }
 
+.page__main.index__main { padding: 0; }
+
 .attraction-content__container {
   max-width: 1200px;
   margin: 0 auto;

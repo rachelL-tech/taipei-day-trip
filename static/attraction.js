@@ -223,6 +223,7 @@
         });
 
         const json = await res.json();
+        console.log(json);
 
         if (res.ok && json.ok) {
           window.location.href = "/booking";
@@ -235,7 +236,7 @@
           window.AuthDialog.open();
           return;
         }
-        
+
         alert(json.message);
       } catch (err) {
         console.error(err);

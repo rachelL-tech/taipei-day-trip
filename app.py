@@ -13,6 +13,8 @@ import random
 from datetime import datetime
 from urllib.request import Request as urlRequest, urlopen
 from urllib.error import URLError, HTTPError
+from schemas import * 
+from fastapi.exceptions import RequestValidationError
 
 app = FastAPI()
 
@@ -142,13 +144,10 @@ def tappay_pay_by_prime(prime: str, amount: int, order_number: str, contact: dic
 ## 路由
 # 註冊一個新的會員
 @app.post("/api/user")
-async def user_signup(body: dict = Body(...)):
-	name = str(body.get("name", "")).strip()  # 取 name，轉字串並去掉前後空白
-	email = str(body.get("email", "")).strip()  # 取 email，轉字串並去掉前後空白
-	password = str(body.get("password", ""))  # 取 password
-
-	if name == "" or email == "" or password == "": 
-		return JSONResponse(status_code=400, content={"error": True, "message": "請完整填寫姓名、信箱和密碼"})
+async def user_signup(payload: SignUpIn):
+	name = payload.name  # 取 name
+	email = str(payload.email).strip()  # 取 email
+	password = payload.password  # 取 password
 	
 	con = None
 	cursor = None
@@ -188,9 +187,9 @@ async def user_signup(body: dict = Body(...)):
 
 # 登入會員帳戶
 @app.put("/api/user/auth")
-async def signin(body: dict = Body(...)):
-	email = str(body.get("email", "")).strip()
-	password = str(body.get("password", ""))
+async def signin(payload: SignInIn):
+	email = str(payload.email).strip()
+	password = payload.password
 
 	if email == "" or password == "": 
 		return JSONResponse(status_code=400, content={"error": True, "message": "請輸入信箱和密碼"})
@@ -542,16 +541,17 @@ async def get_booking(request: Request):
 	
 # 建立新的預定行程
 @app.post("/api/booking")
-async def create_booking(request: Request, body: dict = Body(...)):
-	user_id = get_current_user(request).get("id")
-	if not user_id:
+async def create_booking(request: Request, payload: BookingIn):
+	payload = get_current_user(request)
+	if not payload:
 		return JSONResponse(status_code=403, content={"error": True, "message": "未登入系統，拒絕存取"})
+	user_id = payload["id"]
 	
 	# 進 DB 前做基本驗證
-	attraction_id = body.get("attractionId")
-	date = body.get("date")
-	time = body.get("time")
-	price = body.get("price")
+	attraction_id = payload.attractionId
+	date = payload.date # 已是 datetime.date
+	time = payload.time
+	price = payload.price
 	try:
 		attraction_id = int(attraction_id)
 		price = int(price)
@@ -618,7 +618,7 @@ async def delete_booking(request: Request):
 
 # 建立新的訂單，並串接第三方金流，完成付款程序
 @app.post("/api/orders")
-async def create_order(request: Request, body: dict = Body(...)):
+async def create_order(request: Request, payload: OrderIn):
 	# 驗權限
 	payload = get_current_user(request)
 	if not payload:
@@ -626,11 +626,10 @@ async def create_order(request: Request, body: dict = Body(...)):
 	user_id = payload["id"]
 	
 	# 解析 prime + order + contact
-	prime = str(body.get("prime", "")).strip()
-	contact_obj = body.get("contact", "")
-	contact_name = str(contact_obj.get("name", "")).strip()
-	contact_email = str(contact_obj.get("email", "")).strip()
-	contact_phone = str(contact_obj.get("phone", "")).strip()
+	prime = payload.prime.strip()
+	contact_name = payload.contact.name.strip()
+	contact_email = str(payload.contact.email).strip()
+	contact_phone = payload.contact.phone.strip()
 
 	if not prime or not contact_name or not contact_email or not contact_phone:
 		return JSONResponse(status_code=400, content={"error": True, "message": "訂單建立失敗，輸入不正確或其他原因"})
@@ -809,6 +808,13 @@ async def get_order(orderNumber: str, request: Request):
 			cursor.close()
 		if con:
 			con.close()
+
+# 把 Pydantic 驗證失敗的 error 轉成 400
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc: RequestValidationError):
+    # 把第一個錯誤訊息取出來
+    msg = exc.errors()[0].get("msg", "輸入不正確或其他原因")
+    return JSONResponse(status_code=400, content={"error": True, "message": msg})
 
 # Static Pages (Never Modify Code in this Block)
 @app.get("/", include_in_schema=False) # include_in_schema=False 會把這個路由從 API 文件中隱藏
