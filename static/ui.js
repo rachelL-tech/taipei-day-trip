@@ -41,7 +41,7 @@
   // 一般元件
   UI.fadeShow = function fadeShow(el) {
     if (!el) return;
-    el.hidden = false;
+    el.hidden = false; // .fade-slide 的 opacity: 0;，預設看不到，等 is-open 才可見 */
     requestAnimationFrame(() => el.classList.add("is-open"));
   };
 

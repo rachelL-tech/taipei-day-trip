@@ -44,16 +44,7 @@
     addrEl.textContent = data.address ?? "";
     transportEl.textContent = data.transport ?? "";
 
-    images = data.images;
-    if (!imgEl || !indicatorEl) return;
-    // 沒圖片時，不要殘留舊圖
-    if (images.length === 0) { 
-      imgEl.removeAttribute("src");
-      imgEl.alt = "";
-      return;
-    }
-    createSegment(images.length, 0);
-    showSlide(0);
+    initSlideshowWithImages(data.images);
   }
 
   async function init() {
@@ -116,9 +107,12 @@
     if (!imgEl || count === 0) return;
 
     currentIndex = normalizeIndex(targetIndex, count);
+
     imgEl.src = images[currentIndex];
     imgEl.alt = nameEl.textContent ?? "";
+
     setActiveSegment(currentIndex);
+    preloadAround(currentIndex);
   }
   
   // 把click事件翻譯成使用者想去第幾張
@@ -146,7 +140,45 @@
   }
 
   // 圖片預載功能
+  const preloadCache = new Map();
   
+  function preloadImage(url) {
+    if (!url) return;
+    if (preloadCache.has(url)) return;
+
+    const img = new Image();
+    img.src = url;
+
+    preloadCache.set(url, img);
+  }
+
+  function preloadAround(centerIndex) {
+    const count = images.length;
+    if (count <= 1) return;
+
+    for (let offset = 1; offset <= 2; offset++) { // offset=0 代表自己那張，預載前後圖時通常會跳過自己
+      preloadImage(images[normalizeIndex(centerIndex + offset, count)]);
+      preloadImage(images[normalizeIndex(centerIndex - offset, count)]);
+    }
+  }
+
+  function initSlideshowWithImages(newImages) {
+    images = newImages;
+    currentIndex = 0;
+
+    if (!imgEl) return;
+
+    if (images.length === 0) {
+      imgEl.removeAttribute("src");
+      imgEl.alt = "";
+      if (indicatorEl) indicatorEl.innerHTML = "";
+      return;
+    }
+
+    createSegment(images.length, 0);
+    preloadAround(0); // 預載前後2張
+    showSlide(0);
+  }
 
   // Part 5-4: Create a Booking
   function bindCreateBooking() {

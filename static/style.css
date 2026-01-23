@@ -479,7 +479,7 @@ button { font: inherit; }
   left: 0; /* 貼齊上方，左右撐滿整個視窗寬度 */
   right: 0;
   top: 0;
-  height: 3px;
+  height: 5px;
   z-index: 2001;
   /* pointer-events: none; 這條 bar 不會吃掉滑鼠事件（例如點最上方的按鈕/連結，不會被它擋住）。 */
 
