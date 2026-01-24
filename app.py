@@ -231,15 +231,15 @@ async def signin(payload: SignInIn):
 # 取得當前登入的會員資訊
 @app.get("/api/user/auth")
 def get_user(request: Request): # 用 request 拿 Authorization header
-	payload = get_current_user(request)
-	if not payload: # 沒 token / token 無效、過期 / 驗章失敗
+	user = get_current_user(request)
+	if not user: # 沒 token / token 無效、過期 / 驗章失敗
 		return {"data": None} 
 	
 	return {
 		"data": {
-			"id": payload["id"],
-			"name": payload["name"],
-			"email": payload["email"],
+			"id": user["id"],
+			"name": user["name"],
+			"email": user["email"],
 		}
 	}
 
@@ -542,10 +542,9 @@ async def get_booking(request: Request):
 # 建立新的預定行程
 @app.post("/api/booking")
 async def create_booking(request: Request, payload: BookingIn):
-	payload = get_current_user(request)
-	if not payload:
+	user_id = get_current_user(request).get("id")
+	if not user_id:
 		return JSONResponse(status_code=403, content={"error": True, "message": "未登入系統，拒絕存取"})
-	user_id = payload["id"]
 	
 	# 進 DB 前做基本驗證
 	attraction_id = payload.attractionId
@@ -620,10 +619,9 @@ async def delete_booking(request: Request):
 @app.post("/api/orders")
 async def create_order(request: Request, payload: OrderIn):
 	# 驗權限
-	payload = get_current_user(request)
-	if not payload:
+	user_id = get_current_user(request).get("id")
+	if not user_id:
 		return JSONResponse(status_code=403, content={"error": True, "message": "未登入系統，拒絕存取"})
-	user_id = payload["id"]
 	
 	# 解析 prime + order + contact
 	prime = payload.prime.strip()
@@ -737,10 +735,10 @@ async def create_order(request: Request, payload: OrderIn):
 # 根據訂單編號取得訂單資訊
 @app.get("/api/order/{orderNumber}")
 async def get_order(orderNumber: str, request: Request):
-	payload = get_current_user(request)
-	if not payload:
+	user_id = get_current_user(request).get("id")
+	if not user_id:
 		return JSONResponse(status_code=403, content={"error": True, "message": "未登入系統，拒絕存取"})
-	user_id = payload["id"]
+
 
 	con = None
 	cursor = None

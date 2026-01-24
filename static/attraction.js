@@ -181,16 +181,43 @@
   }
 
   // Part 5-4: Create a Booking
+  function isPastDate(dateStr) {
+    if (!dateStr) return false;
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const selected = new Date(y, m - 1, d);
+    selected.setHours(0, 0, 0, 0);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return selected < today;
+  }
+
   function bindCreateBooking() {
     const bookingForm = document.querySelector(".booking-card__form");
     if (!bookingForm) return;
+
+    const dateInput = bookingForm.querySelector('#booking-date');
+    const todayStr = new Date().toLocaleDateString("en-CA") // new Date()：建立「現在此刻」的日期時間物件（包含年月日、時分秒）；.toLocaleDateString("en-CA")把日期用加拿大英文格式輸出成字串（YYYY-MM-DD）
+
+    if (dateInput) dateInput.min = todayStr; // 把 min 設成「今天」後： min 是 HTML date input 的屬性，允許選擇/輸入的最小日期
+
     bookingForm.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      const dateInput = bookingForm.querySelector('#booking-date');
       const date = dateInput ? dateInput.value : null;
       const time = getCheckedTime();
       const price = TIME_PRICE[time];
+
+      if (!date) {
+        alert("請選擇日期");
+        return;
+      }
+
+      if(date < todayStr) {
+        alert("日期不可選擇過去日期");
+        return;
+      }
 
       const bookingData = {
         attractionId: attractionId,

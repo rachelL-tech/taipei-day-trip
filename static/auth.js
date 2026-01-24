@@ -86,6 +86,11 @@
     // Part 4-4: Sign Up Procedure
     // 註冊成功後，自動切到登入表單的 timer
     let signupSuccessTimer = null;
+
+    function isValidEmail(v) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+    }
+
     function clearSignupTimer() {
         if (signupSuccessTimer) {
             clearTimeout(signupSuccessTimer); // 取消已經排程出去的 setTimeout
@@ -97,12 +102,18 @@
         e.preventDefault();
         
         const formData = new FormData(signupForm); // 用 signupForm 這個 <form> 元素，建立一個 FormData 物件，自動把表單裡所有有 name 的欄位目前的值收集起來
-        const name = formData.get("name") ?? "";
-        const email = formData.get("email") ?? "";
-        const password = formData.get("password") ?? "";
+        const name = formData.get("name") ?? "".trim();
+        const email = formData.get("email") ?? "".trim();
+        const password = formData.get("password") ?? "".trim();
 
         if (!name || !email || !password) {
             setMessage("請完整填寫姓名、信箱和密碼", "is-error");
+            setTimeout(() => setMessage(""), 2000);
+            return;
+        }
+
+        if (!isValidEmail(email)) {
+            setMessage("Email 格式不正確", "is-error");
             setTimeout(() => setMessage(""), 2000);
             return;
         }
@@ -155,16 +166,24 @@
         e.preventDefault();
 
         const formData = new FormData(signinForm);
-        const email = formData.get("email") ?? "";
-        const password = formData.get("password") ?? "";
+        const email = formData.get("email") ?? "".trim();
+        const password = formData.get("password") ?? "".trim();
 
         if(!email || !password){
             setMessage("請輸入信箱和密碼", "is-error");
             setTimeout(() => setMessage(""), 2000);
+            return;
+        }
+
+        if (!isValidEmail(email)) {
+            setMessage("Email 格式不正確", "is-error");
+            setTimeout(() => setMessage(""), 2000);
+            return;
         }
 
         const btn = signinForm.querySelector('button[type="submit"]');
         if (btn) btn.disabled = true;
+        window.AppUI.startLoading();
 
         try{ // 嘗試送出登入請求
             const res = await fetch("/api/user/auth", {
@@ -200,13 +219,20 @@
 
                         const bookJson = await bookRes.json();
                         clearPendingBooking();
+
                         if (bookRes.ok && bookJson.ok) {
                             window.location.href = "/booking";
                             return;
                         }
+
+                        setMessage(bookJson.message, "is-error");
+                        setTimeout(() => setMessage(""), 2000);
+                        return;
                     } catch (err) {
                         clearPendingBooking();
                         console.error("pending booking failed:", err);
+                        setMessage("建立預定失敗，請稍後再試", "is-error");
+                        setTimeout(() => setMessage(""), 2000);
                         return;
                         // 失敗的話就不跳轉了，繼續下面的重新載入頁面流程
                     }
@@ -225,6 +251,7 @@
             setTimeout(() => setMessage(""), 2000);
         } finally {
             if (btn) btn.disabled = false;
+            window.AppUI.stopLoading();
         }
     }
 
