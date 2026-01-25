@@ -474,17 +474,55 @@ button { font: inherit; }
 .auth-form__message.is-success { color: #2a7b2a; }
 
 /* ===== AppUI: Top Loading Bar ===== */
+/* 圓圈 loading */
 .top-loading {
-  position: fixed; /* 固定在視窗上，不會因為頁面滾動而跑掉 */
-  left: 0; /* 貼齊上方，左右撐滿整個視窗寬度 */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 180ms ease;
+}
+
+.top-loading[hidden] { display: none; }
+
+.top-loading::after {
+  content: "";
+  width: 75px;
+  height: 75px;
+  border: 15px solid #dddddd;
+  border-top-color: #009578;
+  border-radius: 50%;
+  animation: loading 0.75s ease infinite;
+}
+
+.top-loading.is-active {
+  opacity: 1;
+  visibility: visible;
+}
+
+@keyframes loading {
+  from { transform: rotate(0turn) }
+  to { transform: rotate(1turn) }
+}
+
+/* 長條 loading */
+/* .top-loading {
+  position: fixed; 固定在視窗上，不會因為頁面滾動而跑掉
+  left: 0; 貼齊上方，左右撐滿整個視窗寬度
   right: 0;
   top: 0;
   height: 5px;
   z-index: 2001;
-  /* pointer-events: none; 這條 bar 不會吃掉滑鼠事件（例如點最上方的按鈕/連結，不會被它擋住）。 */
-
-  opacity: 0; /* 預設透明（看不到），配合 is-active 切到 1 做淡入 */
-  transition: opacity 160ms ease;   /* 當 opacity/transform 改變時，走動畫而不是瞬間跳 */
+  pointer-events: none; 這條 bar 不會吃掉滑鼠事件（例如點最上方的按鈕/連結，不會被它擋住）
+  opacity: 0; 預設透明（看不到），配合 is-active 切到 1 做淡入
+  transition: opacity 160ms ease; 當 opacity/transform 改變時，走動畫而不是瞬間跳
 }
 
 .top-loading.is-active {
@@ -492,23 +530,23 @@ button { font: inherit; }
 }
 
 .top-loading__bar {
-  height: 100%; /* 內條高度等於外層容器 */
+  height: 100%; 內條高度等於外層容器
   width: 35%;
   background: linear-gradient(
     90deg,
     rgba(68, 136, 153, 0) 0%,
     rgba(68, 136, 153, 1) 50%,
     rgba(68, 136, 153, 0) 100%
-  ); /* 做出中間亮、兩側透明的光帶 */
-  animation: topLoadingMove 900ms ease-in-out infinite; /* 套用 keyframes 讓光帶一直水平移動：把 topLoadingMove 的動畫套用在此元素上，每一輪跑 900ms，速度曲線是 ease-in-out（一開始慢 → 中間快 → 結尾慢），而且無限重複（一直跑，代表「還在載入」） */
+  ); 做出中間亮、兩側透明的光帶 
+  animation: topLoadingMove 900ms ease-in-out infinite; /* 套用 keyframes 讓光帶一直水平移動：把 topLoadingMove 的動畫套用在此元素上，每一輪跑 900ms，速度曲線是 ease-in-out（一開始慢 → 中間快 → 結尾慢），而且無限重複（一直跑，代表「還在載入」）
 }
 
-/* 定義光帶移動：從螢幕左外面 → 跑過去 → 跑到右外面 */
+定義光帶移動：從螢幕左外面 → 跑過去 → 跑到右外面
 @keyframes topLoadingMove {
   0% { transform: translateX(-60%); }
-  50% { transform: translateX(160%); } /* 動畫跑到一半（900ms 的一半 = 450ms） */
+  50% { transform: translateX(160%); } 動畫跑到一半（900ms 的一半 = 450ms） 
   100% { transform: translateX(360%); }
-}
+} */
 
 /* ===== AppUI: Fade/Slide utility ===== */
 .fade-slide {
