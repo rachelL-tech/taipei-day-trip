@@ -102,7 +102,7 @@
   }
 
   // 把「多筆 attraction 資料陣列」渲染到 gridEl 裡
-  function renderAttractions(list, { replace = false } = {}) {
+  function renderAttractions(list, { replace = false } = {}) { // = {} ：第二參數沒傳（是 undefined），就用空物件 {} 代替，解構才不會報錯；{ replace = false }從第二個參數物件裡拿出 replace，如果沒提供就預設 false
     if (replace) gridEl.textContent = "";
 
     const frag = document.createDocumentFragment(); // 在記憶體裡先建立一個「看不見的暫存容器」再一次插入，避免一直操作 DOM ，效能跟流暢度會比較好
@@ -118,6 +118,7 @@
     if (state.isLoading) return; // 防止重複觸發
 
     state.isLoading = true;
+    window.AppUI.startLoading();
 
     try {
       const json = await fetchAttractions({
@@ -134,12 +135,9 @@
       state.nextPage = null;
     } finally {
       state.isLoading = false;
+      window.AppUI.stopLoading();
 
       setupObserver(); // for Part 2-3
-
-    //   if (state.nextPage !== null && isElementInViewport(sentinelEl)) {
-    //     requestLoadMore();
-    //   }
     }
   }
 
@@ -148,11 +146,6 @@
   if (!sentinelEl) return;
 
   let observer = null;
-
-//   function isElementInViewport(el) {
-//     const rect = el.getBoundingClientRect();
-//     return rect.top < window.innerHeight && rect.bottom > 0;
-//   }
 
   function setupObserver() {
     if (observer) observer.disconnect();
@@ -174,12 +167,6 @@
         if (observer) observer.disconnect();
         return;
     }
-
-    // if (state.isLoading) {
-    //     state.pendingLoadMore = true;
-    //     return;
-    // }
-
     loadNextPage();
   }
 
@@ -189,6 +176,7 @@
 
     const pageToLoad = state.nextPage;
     state.isLoading = true;
+    window.AppUI.startLoading();
 
     try {
         const json = await fetchAttractions({ page: pageToLoad, category: state.category, keyword: state.keyword });
@@ -202,16 +190,7 @@
         if (observer) observer.disconnect();
     } finally {
         state.isLoading = false;
-
-        // if (state.pendingLoadMore) {
-        // state.pendingLoadMore = false;
-        // requestLoadMore();
-        // return;
-        // }
-
-        // if (state.nextPage !== null && isElementInViewport(sentinelEl)) {
-        // requestLoadMore();
-        // }
+        window.AppUI.stopLoading();
     }
   }
 
@@ -224,7 +203,12 @@
 
   function setPanelOpen(isOpen) {
     if (!categoryPanelEl || !categoryTriggerBtn) return;
-    categoryPanelEl.hidden = !isOpen;
+
+    if (window.AppUI.fadeToggle) {
+      window.AppUI.fadeToggle(categoryPanelEl, isOpen);
+    } else {
+      categoryPanelEl.hidden = !isOpen;
+    }
   }
 
   function togglePanel() {
@@ -289,7 +273,7 @@
 
       const category = item.dataset.category;
       setCurrentCategory(category);
-      categoryPanelEl.hidden = true;
+      setPanelOpen(false);
     });
   }
 
@@ -304,7 +288,7 @@
       e.preventDefault(); // 不刷新頁面
 
       // 讀取 keyword（trim），空字串就視為「沒有 keyword」
-      const kw = keywordInput.value.trim(); // 更好寫法是 const kw = (keywordInput?.value ?? "").trim();
+      const kw = keywordInput.value.trim();
       state.keyword = kw; 
       
       // 重新載入第一頁（replace）
@@ -377,6 +361,7 @@
   async function initMrtList() {
     if (!mrtListEl) return;
 
+    window.AppUI.startLoading();
     try {
       const resp = await fetch("/api/mrts");
       if (!resp.ok) throw new Error(`Fetch /api/mrts failed: ${resp.status}`);
@@ -388,6 +373,8 @@
       bindMrtArrows();
     } catch (err) {
       console.error(err);
+    } finally {
+      window.AppUI.stopLoading();
     }
   }
   

@@ -12,7 +12,6 @@
 
   let images = [];
   const TOKEN_KEY = "TOKEN";
-  const state = { signedIn: false };
   const PENDING_BOOKING_KEY = "PENDING_BOOKING";
 
   // 從網址抓 id ：不建議經過 index 的 click 事件把 id 存在 cookie/localStorage/變數，因為直接貼連結、在景點頁按重新整理、或從 Google 搜尋進來等情況，都不會經過 index 的 click 事件，而且cookie / localStorage 是「全站共享」，同時開很多不同 id 的 tab 會互相污染
@@ -45,25 +44,19 @@
     addrEl.textContent = data.address ?? "";
     transportEl.textContent = data.transport ?? "";
 
-    images = data.images;
-    if (!imgEl || !indicatorEl) return;
-    // 沒圖片時，不要殘留舊圖
-    if (images.length === 0) { 
-      imgEl.removeAttribute("src");
-      imgEl.alt = "";
-      return;
-    }
-    createSegment(images.length, 0);
-    showSlide(0);
+    initSlideshowWithImages(data.images);
   }
 
   async function init() {
+    window.AppUI.startLoading();
     try {
       const json = await fetchAttraction(attractionId);
       renderAttraction(json.data);
     } catch (err) {
       console.error(err);
       nameEl.textContent = "載入失敗，請稍後再試";
+    } finally {
+      window.AppUI.stopLoading();
     }
   }
 
@@ -83,7 +76,7 @@
   }
 
   function getCheckedTime() {
-    const checked = document.querySelector('input[name="time"]:checked'); // 選到 <input> ＋ name="time"＋目前已勾選的 DOM 元素
+    const checked = document.querySelector('input[name="time"]:checked'); // 選到 <input> ＋ name="time"＋ 目前勾選的 DOM 元素
     if(!checked) return "morning";
     return checked.value;
   }
@@ -104,6 +97,24 @@
   const leftBtn = document.querySelector(".carousel__btn--left");
   const rightBtn = document.querySelector(".carousel__btn--right");
 
+  // 無限循環輪播：第一張往左時跳到最後一張；最後一張往右時跳到第一張。例如count = 5 ， i = -1 時，return 4 ；i = 5 時，return 0
+  function normalizeIndex(i, count) {
+    return ((i % count) + count) % count; // 負數也能正確循環
+  }
+
+  function showSlide(targetIndex) {
+    const count = images.length;
+    if (!imgEl || count === 0) return;
+
+    currentIndex = normalizeIndex(targetIndex, count);
+
+    imgEl.src = images[currentIndex];
+    imgEl.alt = nameEl.textContent ?? "";
+
+    setActiveSegment(currentIndex);
+    preloadAround(currentIndex);
+  }
+  
   // 把click事件翻譯成使用者想去第幾張
   function bindSlideshow() {
     if (leftBtn) leftBtn.addEventListener("click", () => showSlide(currentIndex - 1));
@@ -121,39 +132,92 @@
     }
   }
 
-  // 更新 is-active 狀態
+  // 更新 segment 的 is-active 狀態
   function setActiveSegment(activeIndex) {
     document.querySelectorAll(".carousel__segment").forEach((seg, i) => {
       seg.classList.toggle("is-active", i === activeIndex); // toggle(className, condition) 代表 condition 是 true 時 → 加上 "is-active"（原本就有的話 → 維持不變，不會重複加）; condition 是 false 時 → 移除 "is-active"（原本沒有的話 → 維持不變）
     });
   }
 
-  // 無限循環輪播：第一張往左時跳到最後一張；最後一張往右時跳到第一張。例如count = 5 ， i = -1 時，return 4 ；i = 5 時，return 0
-  function normalizeIndex(i, count) {
-  return ((i % count) + count) % count; // 負數也能正確循環
+  // 圖片預載功能
+  const preloadCache = new Map();
+  
+  function preloadImage(url) {
+    if (!url) return;
+    if (preloadCache.has(url)) return;
+
+    const img = new Image();
+    img.src = url;
+
+    preloadCache.set(url, img);
   }
 
-  function showSlide(targetIndex) {
+  function preloadAround(centerIndex) {
     const count = images.length;
-    if (!imgEl || count === 0) return;
+    if (count <= 1) return;
 
-    currentIndex = normalizeIndex(targetIndex, count);
-    imgEl.src = images[currentIndex];
-    imgEl.alt = nameEl.textContent ?? "";
-    setActiveSegment(currentIndex);
+    for (let offset = 1; offset <= 2; offset++) { // offset=0 代表自己那張，預載前後圖時通常會跳過自己
+      preloadImage(images[normalizeIndex(centerIndex + offset, count)]);
+      preloadImage(images[normalizeIndex(centerIndex - offset, count)]);
+    }
+  }
+
+  function initSlideshowWithImages(newImages) {
+    images = newImages;
+    currentIndex = 0;
+
+    if (!imgEl) return;
+
+    if (images.length === 0) {
+      imgEl.removeAttribute("src");
+      imgEl.alt = "";
+      if (indicatorEl) indicatorEl.innerHTML = "";
+      return;
+    }
+
+    createSegment(images.length, 0);
+    preloadAround(0); // 預載前後2張
+    showSlide(0);
   }
 
   // Part 5-4: Create a Booking
+  function isPastDate(dateStr) {
+    if (!dateStr) return false;
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const selected = new Date(y, m - 1, d);
+    selected.setHours(0, 0, 0, 0);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return selected < today;
+  }
+
   function bindCreateBooking() {
     const bookingForm = document.querySelector(".booking-card__form");
     if (!bookingForm) return;
+
+    const dateInput = bookingForm.querySelector('#booking-date');
+    const todayStr = new Date().toLocaleDateString("en-CA") // new Date()：建立「現在此刻」的日期時間物件（包含年月日、時分秒）；.toLocaleDateString("en-CA")把日期用加拿大英文格式輸出成字串（YYYY-MM-DD）
+
+    if (dateInput) dateInput.min = todayStr; // 把 min 設成「今天」後： min 是 HTML date input 的屬性，允許選擇/輸入的最小日期
+
     bookingForm.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      const dateInput = bookingForm.querySelector('#booking-date');
       const date = dateInput ? dateInput.value : null;
       const time = getCheckedTime();
       const price = TIME_PRICE[time];
+
+      if (!date) {
+        alert("請選擇日期");
+        return;
+      }
+
+      if(date < todayStr) {
+        alert("日期不可選擇過去日期");
+        return;
+      }
 
       const bookingData = {
         attractionId: attractionId,
@@ -175,6 +239,7 @@
         }
 
         // 已登入：直接建立預定
+        window.AppUI.startLoading();
         const res = await fetch("/api/booking", {
           method: "POST",
           headers: {
@@ -185,6 +250,7 @@
         });
 
         const json = await res.json();
+        console.log(json);
 
         if (res.ok && json.ok) {
           window.location.href = "/booking";
@@ -197,7 +263,7 @@
           window.AuthDialog.open();
           return;
         }
-        
+
         alert(json.message);
       } catch (err) {
         console.error(err);
@@ -205,6 +271,7 @@
         return;
       } finally {
         if (btn) btn.disabled = false;
+        window.AppUI.stopLoading();
       }
     });
   }

@@ -50,56 +50,60 @@
     }
 
     async function init(){
-        const orderNumber = new URLSearchParams(location.search).get("number"); // location.search 是網址 ? 後面的 query string，new URLSearchParams() 把 query string 變成「可查 key/value」的物件
-        orderNumberEls.forEach((el) => (el.textContent = orderNumber)); // orderNumberEls 是用 querySelectorAll 拿到的 NodeList，沒有 textContent 方法
-
-        // 沒有訂單編號：直接顯示失敗（但仍可點回 booking / home）
-        if (!orderNumber) {
-            showSection("failed");
-            return;
-        }
-
-        const token = getToken();
-        if (!token) {
-            window.location.href = "/";
-            return;
-        }
-
-        // 取登入者資訊，顯示名字
         try {
-            const res = await fetch("/api/user/auth", { headers: { Authorization: `Bearer ${token}` }
-            })
-            const json = await res.json();
+            const orderNumber = new URLSearchParams(location.search).get("number"); // location.search 是網址 ? 後面的 query string，new URLSearchParams() 把 query string 變成「可查 key/value」的物件
+            orderNumberEls.forEach((el) => (el.textContent = orderNumber)); // orderNumberEls 是用 querySelectorAll 拿到的 NodeList，沒有 textContent 方法
 
-            if (res.ok && json.data && userNameEl) {
-                userNameEl.textContent = json.data.name;
-            }
-        } catch(err) {
-            // 就算名字抓不到，也不影響後續訂單顯示
-            console.warn("fetch user failed:", err);
-        }
-
-        // 查訂單狀態
-        try {
-            const res = await fetch(`/api/order/${encodeURIComponent(orderNumber)}`, { headers: { Authorization: `Bearer ${token}` }
-            })
-
-            const json = await res.json();
-
-            if (!res.ok || !json || json.error) {
+            // 沒有訂單編號：直接顯示失敗（但仍可點回 booking / home）
+            if (!orderNumber) {
                 showSection("failed");
                 return;
             }
 
-            const data = json.data;
-            const paid = (data.status === 0);
+            const token = getToken();
+            if (!token) {
+                window.location.href = "/";
+                return;
+            }
 
-            renderSuccess(data);
-            showSection(paid ? "success" : "failed");
-        } catch(err) { // 連線層級失敗、res.json() 解析失敗（不是合法 JSON）
-            console.warn("fetch order failed:", err);
-            showSection("failed");
-            return;
+            // 取登入者資訊，顯示名字
+            window.AppUI.startLoading();
+            try {
+                const res = await fetch("/api/user/auth", { headers: { Authorization: `Bearer ${token}` }
+                })
+                const json = await res.json();
+
+                if (res.ok && json.data && userNameEl) {
+                    userNameEl.textContent = json.data.name;
+                }
+            } catch(err) {
+                // 就算名字抓不到，也不影響後續訂單顯示
+                console.warn("fetch user failed:", err);
+            }
+
+            // 查訂單狀態
+            try {
+                const res = await fetch(`/api/order/${encodeURIComponent(orderNumber)}`, { headers: { Authorization: `Bearer ${token}` }
+                })
+
+                const json = await res.json();
+
+                if (!res.ok || !json || json.error) {
+                    showSection("failed");
+                    return;
+                }
+
+                const data = json.data;
+                const paid = (data.status === 0);
+
+                renderSuccess(data);
+                showSection(paid ? "success" : "failed");
+            } catch(err) { // 連線層級失敗、res.json() 解析失敗（不是合法 JSON）
+                console.warn("fetch order failed:", err);
+                showSection("failed");
+            }
+        } finally {
+            window.AppUI.stopLoading();
         }
     }
 

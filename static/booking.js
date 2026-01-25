@@ -131,61 +131,66 @@
   }
 
   async function init() {
-    // 先把畫面收起來，避免閃假資料
-    if (emptyEl) emptyEl.hidden = true;
-    if (contentEl) contentEl.hidden = true;
-
-    const token = getToken();
-    if (!token) {
-      window.location.href = "/";
-      return;
-    }
-
-    // // Fetch User API to check user signed-in status, redirect to homepage if the user has not signed in.
-    let user = null;
+    window.AppUI?.startLoading();
     try {
-      user = await fetchUser(token);
-    } catch (err) {
-      console.error(err);
-    }
-    if (!user) {
-      clearToken();
-      window.location.href = "/";
-      return;
-    }
+      // 先把畫面收起來，避免閃假資料
+      if (emptyEl) emptyEl.hidden = true;
+      if (contentEl) contentEl.hidden = true;
 
-    userNameEl.textContent = user.name || "";
-    // 自動帶入聯絡資訊
-    if (contactNameEl && !contactNameEl.value) contactNameEl.value = user.name || "";
-    if (contactEmailEl && !contactEmailEl.value) contactEmailEl.value = user.email || "";
+      const token = getToken();
+      if (!token) {
+        window.location.href = "/";
+        return;
+      }
 
-    // Fetch Booking API to get booking data, render the booking page based on the response of API.
-    try {
-      const booking = await fetchBooking(token);
-
-      if (booking === "UNAUTHORIZED") {
+      // // Fetch User API to check user signed-in status, redirect to homepage if the user has not signed in.
+      let user = null;
+      try {
+        user = await fetchUser(token);
+      } catch (err) {
+        console.error(err);
+      }
+      if (!user) {
         clearToken();
         window.location.href = "/";
         return;
       }
 
-      if (!booking) {
-        showEmpty(); // 沒有預定行程
-        return;
+      userNameEl.textContent = user.name || "";
+      // 自動帶入聯絡資訊
+      if (contactNameEl && !contactNameEl.value) contactNameEl.value = user.name || "";
+      if (contactEmailEl && !contactEmailEl.value) contactEmailEl.value = user.email || "";
+
+      // Fetch Booking API to get booking data, render the booking page based on the response of API.
+      try {
+        const booking = await fetchBooking(token);
+
+        if (booking === "UNAUTHORIZED") {
+          clearToken();
+          window.location.href = "/";
+          return;
+        }
+
+        if (!booking) {
+          showEmpty(); // 沒有預定行程
+          return;
+        }
+
+        currentBooking = booking;
+
+        renderBooking(booking);
+        showContent();
+        bindDelete(token);
+
+        initTapPayFields();
+        bindSubmit(token);
+      } catch (err) {
+        console.error(err);
+        alert("載入失敗，請稍後再試");
+        showEmpty();
       }
-
-      currentBooking = booking;
-
-      renderBooking(booking);
-      showContent();
-      bindDelete(token);
-
-      initTapPayFields();
-      bindSubmit(token);
-    } catch (err) {
-      console.error(err);
-      alert("載入失敗，請稍後再試");
-      showEmpty();
+    } finally {
+    window.AppUI.stopLoading();
     }
   }
 
@@ -253,21 +258,29 @@
   }
 
     // get TapPay Prime and send it with other necessary data to the back-end
-    function onSubmit(token, contact){
+    function onSubmit(token, contact, done){
+      let finished = false;
+      // 宣告一個函式 finish。 onSubmit 收到一個 done(msg) callback，onSubmit 所有 return 都要走 done
+      const finish = (msg) => {
+        if (finished) return;
+        finished = true; // 標記已收尾
+        done(msg); // 呼叫外部的 finalize(msg)
+      };
+
       // 得到 TapPay Fields 卡片資訊的輸入狀態：做格式的即時驗證，避免明顯錯誤（提升 UX）
       const tappayStatus = TPDirect.card.getTappayFieldsStatus();
       if (!tappayStatus.canGetPrime) {
-        alert("信用卡資訊未填完整或格式錯誤");
+        finish("信用卡資訊未填完整或格式錯誤");
         return;
       }
       
       TPDirect.card.getPrime(async (result) => {
         if (result.status !== 0){
-          alert("get prime failed " + result.msg);
+          finish("get prime failed " + result.msg);
           return;
         }
 
-        const prime = result.card.prime; // result.status == 0 代表 TapPay 已經拿到了這次付款所需的卡資料，並把它封裝成一個一次性、短時間有效的 token（這裡的 prime ）＝允許這次交易」的憑證；你可以拿這個 token 讓後端去請 TapPay 幫你扣款
+        const prime = result.card.prime; // result.status == 0 代表 TapPay 已經拿到了這次付款所需的卡資料，並把它封裝成一個「一次性、短時間有效的 token（這裡的 prime）＝允許這次交易」的憑證；你可以拿這個 token 給後端請 TapPay 幫扣款
 
         try {
           const res = await fetch("/api/orders", {
@@ -295,43 +308,56 @@
             })
           });
           
-          // Part 6-4：After Order and Payment are Completed
           if (res.status === 403){
             clearToken();
             window.location.href = "/";
+            finish();
             return;
           }
           
           const json = await res.json();
 
           if (json.error) {
-            alert(json.message || "訂單建立失敗");
+            finish(json.message || "訂單建立失敗");
             return;
           }
 
           const order_number = json.data.number;
           if (!order_number) {
-            alert("訂單建立完成，但未取得訂單編號");
+            finish("訂單建立完成，但未取得訂單編號");
             return;
           }
 
           window.location.href = `/thankyou?number=${encodeURIComponent(order_number)}`;
+          finish();
         } catch (err) {
-            alert(err.message || "取得 prime 失敗")
-        } finally {
-          // 把按鈕狀態交回「目前 TapPay 欄位狀態」決定
-          try {
-            const s = TPDirect.card.getTappayFieldsStatus();
-            submitBtn.disabled = !s.canGetPrime;
-          } catch {
-            submitBtn.disabled = false;
-          }
+          finish(err.message || "取得 prime 失敗")
         }
       });
     }
 
+    function isValidEmail(v) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); // 「/.../」是一個正則表達式（regex）：^代表字串開頭；【帳號部分(local-part)】[^\s@]+代表至少 1 個字元，而且不能是「空白」(\s) 也不能是 @；@代表一定要有一個 @；【網域的前半，例如 gmail】[^\s@]+；\.代表一個真正的點 .，因為 . 在 regex 代表任意字元，所以要跳脫成 \.，【頂級網域，例如 com】[^\s@]+；$代表字串結尾
+    }
+    function isValidPhone(v) {
+      const digits = v.replace(/\D/g, ""); // \D 代表「非數字」(Not a Digit)；g 代表「全域」，把字串裡所有非數字都替換，如"0912-345-678" → "0912345678"、"(02) 2345 6789" → "0223456789"
+      return digits.length >= 8;
+    }
+
+    // UI 收尾器
     function bindSubmit(token){
       if (!submitBtn) return;
+
+      function finalize(errMsg) {
+        window.AppUI.stopLoading();
+        try { // 按鈕狀態交回 TapPay 決定
+          const s = TPDirect.card.getTappayFieldsStatus();
+          submitBtn.disabled = !s.canGetPrime;
+        } catch { // 例外時至少讓按鈕可用
+          submitBtn.disabled = false;                  
+        }
+        if (errMsg) alert(errMsg);
+      }
 
       submitBtn.addEventListener("click", async () => {
         if (!currentBooking) {
@@ -350,9 +376,20 @@
           return;
         }
 
+        if (!isValidEmail(contact.email)) {
+          alert("Email格式不正確");
+          return;
+        }
+
+        if (!isValidPhone(contact.phone)) {
+          alert("電話格式不正確");
+          return;
+        }
+
         submitBtn.disabled = true;
-        
-        onSubmit(token, contact);
+        window.AppUI.startLoading();
+
+        onSubmit(token, contact, finalize);
       });
     }
 
